@@ -6,11 +6,17 @@ interface ApiResponse<T> {
   error: { code: string; message: string } | null;
 }
 
-function unwrap<T>(res: { data: ApiResponse<T>; status: number }): T {
-  if (!res.data.isSuccess || res.data.value === undefined) {
-    throw new Error(res.data.error?.message ?? `Request failed (${res.status})`);
+function unwrap<T>(res: { data: unknown; status: number }): T {
+  const data = res.data;
+  if (data !== null && typeof data === "object" && "isSuccess" in data) {
+    const apiResponse = data as Record<string, unknown>;
+    if (!apiResponse.isSuccess || apiResponse.value === undefined) {
+      const errorObj = apiResponse.error as { message?: string } | undefined;
+      throw new Error(errorObj?.message ?? `Request failed (${res.status})`);
+    }
+    return apiResponse.value as T;
   }
-  return res.data.value;
+  return data as T;
 }
 
 export interface SlackStatus {
@@ -21,14 +27,20 @@ export interface SlackStatus {
 export const integrationsService = {
   async getSlackStatus(): Promise<SlackStatus> {
     try {
-      const res = await privateApi.get<ApiResponse<SlackStatus | boolean>>("/api/integrations/slack/status");
-      const value = unwrap(res);
+      const res = await privateApi.get<unknown>("/api/integrations/slack/status");
+      const value = unwrap<unknown>(res);
       // Handle case where value is just a boolean or an object
       if (typeof value === "boolean") {
         return { isConnected: value };
       }
-      if (value && typeof value === "object" && "isConnected" in value) {
-        return value as SlackStatus;
+      if (value !== null && typeof value === "object") {
+        const obj = value as Record<string, unknown>;
+        if ("isConnected" in obj) {
+          return {
+            isConnected: Boolean(obj.isConnected),
+            workspaceName: (obj.teamName as string | undefined) || (obj.workspaceName as string | undefined),
+          };
+        }
       }
       return { isConnected: !!value };
     } catch {
