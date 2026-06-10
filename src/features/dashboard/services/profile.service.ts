@@ -26,7 +26,6 @@ interface ApiResponse<T> {
 export interface UpdateProfilePayload {
   firstName: string;
   lastName: string;
-  organization?: string;
 }
 
 export interface NotificationPreferences {

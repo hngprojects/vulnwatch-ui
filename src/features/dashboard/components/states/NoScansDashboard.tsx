@@ -1,7 +1,6 @@
 import type { Domain } from '@/features/domain/types/domain.types';
 import { DomainSelector } from '@/features/dashboard/components/DomainSelector';
 import { DomainEmptyState } from '@/features/dashboard/components/DomainEmptyState';
-import { TourProvider } from '@/features/dashboard/components/tour/TourProvider';
 
 interface NoScansDashboardProps {
   domainsForSelector: Domain[];
@@ -16,7 +15,6 @@ export function NoScansDashboard({
 }: NoScansDashboardProps) {
   return (
     <div className='px-4 md:px-6 py-6 space-y-5 max-w-7xl mx-auto'>
-      <TourProvider />
       
       {/* Page header text removed (now in global layout header) */}
 

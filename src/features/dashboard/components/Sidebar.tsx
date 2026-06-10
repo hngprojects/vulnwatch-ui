@@ -50,7 +50,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className='hidden lg:flex flex-col w-55 min-h-screen bg-white border-r border-slate-200 shrink-0'>
+    <aside id="tour-sidebar" className='hidden lg:flex flex-col w-55 min-h-screen bg-white border-r border-slate-200 shrink-0'>
       {/* Logo */}
       <div className='flex items-center h-[88px] px-5 border-b border-slate-200 shrink-0'>
         <Link href='/dashboard' className='flex items-center w-full'>

@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import GeneralSettings from "./GeneralSettings";
-import ComingSoon from "./ComingSoon";
 import SecurityPrivacySettings from "./SecurityPrivacySettings";
+import SessionManagement from "./SessionManagement";
 import IntegrationsSettings from "./IntegrationsSettings";
+import { Tabs, type TabOption } from "@/components/ui/tabs";
 
 type Tab = "general" | "security" | "session" | "integrations";
 
-const TABS: { label: string; value: Tab }[] = [
-  { label: "General", value: "general" },
-  { label: "Security", value: "security" },
-  { label: "Integrations", value: "integrations" },
-  { label: "Session Management", value: "session" },
+const TABS: TabOption<Tab>[] = [
+  { id: "general", label: "General" },
+  { id: "security", label: "Security" },
+  { id: "session", label: "Session Management" },
+  { id: "integrations", label: "Integrations" },
 ];
 
 type SettingsProps = {
@@ -28,26 +29,19 @@ const Settings = ({ initialTab = "general" }: SettingsProps) => {
 
   return (
     <div>
-      <div className="flex sm:gap-[30px]">
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => handleTabChange(tab.value)}
-            className={`pb-2 px-4 sm:px-10 text-sm font-medium transition-colors cursor-pointer ${activeTab === tab.value
-              ? "border-b-3 border-primary text-[#2B2B2B]"
-              : "text-[#6B7280] hover:text-[#2B2B2B]"
-              }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={TABS}
+        activeTab={activeTab}
+        onChange={handleTabChange}
+        ariaLabel="Settings sections"
+        layoutId="settingsTabsIndicator"
+      />
 
-      <div className="mt-6">
+      <div className="mt-8">
         {activeTab === "general" && <GeneralSettings />}
         {activeTab === "security" && <SecurityPrivacySettings />}
         {activeTab === "integrations" && <IntegrationsSettings />}
-        {activeTab === "session" && <ComingSoon title="Session Management" />}
+        {activeTab === "session" && <SessionManagement />}
       </div>
     </div>
   );

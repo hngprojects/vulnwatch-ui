@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Mail, Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { EmailSchema } from "@/schemas";
 
 interface AddEmailDialogProps {
   open: boolean;
@@ -20,17 +21,33 @@ export function AddEmailDialog({
 }: AddEmailDialogProps) {
   const [email, setEmail] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!email || !agreed) return;
-    await onSubmit(email);
-    setEmail("");
-    setAgreed(false);
+    if (!email || !agreed || isSubmitting || isLoading) return;
+
+    const result = EmailSchema.safeParse({ email });
+    if (!result.success) {
+      setError(result.error.issues[0].message);
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onSubmit(result.data.email);
+      setEmail("");
+      setAgreed(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     setEmail("");
     setAgreed(false);
+    setError("");
     onOpenChange(false);
   };
 
@@ -71,15 +88,23 @@ export function AddEmailDialog({
                 </p>
               </div>
 
-              {/* Email input */}
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                className="w-full h-12 px-6 py-4 border border-[#EDEDED] rounded-lg text-base text-brand-dark placeholder:text-brand-dark outline-none focus:border-[#072E28] transition-colors"
-              />
+              <div className="w-full">
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  className={cn(
+                    "w-full h-12 px-6 py-4 border rounded-lg text-base text-brand-dark placeholder:text-brand-dark outline-none transition-colors",
+                    error ? "border-red-500 focus:border-red-500" : "border-[#EDEDED] focus:border-[#072E28]"
+                  )}
+                />
+                {error && <p className="mt-1.5 text-xs text-red-500 text-left">{error}</p>}
+              </div>
 
               {/* Consent checkbox */}
               <button

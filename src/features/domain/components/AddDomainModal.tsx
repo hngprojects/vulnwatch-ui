@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,40 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+}
+
+// 1. Zod Schema for strict domain validation
+const domainSchema = z
+  .string()
+  .min(3, "Domain is too short")
+  .max(253, "Domain is too long")
+  .regex(
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i,
+    "Enter a valid domain format (e.g. example.com)"
+  );
+
+// 2. High-security Sanitization
+function sanitizeDomain(input: string): string {
+  let clean = input.trim().toLowerCase();
+  if (!clean) return "";
+
+  // Force a protocol so the URL parser can extract the hostname reliably
+  if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+    clean = "https://" + clean;
+  }
+
+  try {
+    const url = new URL(clean);
+    let hostname = url.hostname;
+    // Strip "www." prefix if present
+    if (hostname.startsWith("www.")) {
+      hostname = hostname.replace("www.", "");
+    }
+    return hostname;
+  } catch {
+    // Fallback if the URL parser completely fails
+    return input.trim().toLowerCase();
+  }
 }
 
 function extractApiError(err: unknown): string {
@@ -54,21 +89,25 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
   };
 
   const handleSubmit = async () => {
-    const trimmed = value.trim();
-    if (!trimmed) {
+    if (!value.trim()) {
       setError("Please enter a domain name.");
       return;
     }
-    const domainRegex =
-      /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-    if (!domainRegex.test(trimmed)) {
-      setError("Enter a valid domain (e.g. example.com).");
+
+    // Sanitize input
+    const sanitizedDomain = sanitizeDomain(value);
+
+    // Validate with Zod
+    const validationResult = domainSchema.safeParse(sanitizedDomain);
+    if (!validationResult.success) {
+      setError(validationResult.error.issues[0].message);
       return;
     }
+
     setError("");
     setLoading(true);
     try {
-      const domain = await domainService.createDomain({ domain: trimmed });
+      const domain = await domainService.createDomain({ domain: validationResult.data });
       if (typeof window !== "undefined") {
         localStorage.setItem(`vulnwatch_token_${domain.id}`, domain.verificationToken);
       }
@@ -85,7 +124,7 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent showCloseButton className="sm:max-w-[520px] rounded-2xl p-6 bg-white border-0 shadow-lg">
-        <DialogTitle className="text-[20px] font-medium text-[#072E28] font-geist">
+        <DialogTitle className="text-xl font-medium text-primary font-geist">
           Add Domain
         </DialogTitle>
 
@@ -96,7 +135,7 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
             <span className="w-8 h-8 rounded-full bg-brand-green flex items-center justify-center text-sm font-semibold text-white">
               1
             </span>
-            <span className="text-[16px] font-normal text-brand-slate font-geist">
+            <span className="text-base font-normal text-brand-slate font-geist">
               Enter Domain
             </span>
           </div>
@@ -108,10 +147,10 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
 
           {/* Step 2 */}
           <div className="flex items-center gap-3 shrink-0">
-            <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-[#858D90]">
+            <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-500">
               2
             </span>
-            <span className="text-[16px] font-normal text-[#858D90] font-geist">
+            <span className="text-base font-normal text-gray-500 font-geist">
               Verify Domain Ownership
             </span>
           </div>
@@ -119,7 +158,7 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
 
         <div className="space-y-4 mt-2">
           <div>
-            <label className="block text-[16px] font-semibold text-brand-slate font-geist mb-2">
+            <label className="block text-base font-semibold text-brand-slate font-geist mb-2">
               Domain Name
             </label>
             <div className="relative">
@@ -138,11 +177,11 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 aria-invalid={!!error}
                 aria-describedby={error ? "domain-error" : "domain-hint"}
-                className="w-full pl-11 pr-4 h-12 text-sm rounded-[12px] border border-[#E5E7EB] text-brand-dark placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#072E28]/10 focus:border-[#072E28] font-geist transition-shadow"
+                className="w-full pl-11 pr-4 h-12 text-sm rounded-xl border border-gray-200 text-brand-dark placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary font-geist transition-shadow"
               />
             </div>
             {error ? (
-              <p id="domain-error" className="text-xs text-[#EF4444] font-geist mt-1.5">{error}</p>
+              <p id="domain-error" className="text-xs text-error font-geist mt-1.5">{error}</p>
             ) : (
               <p id="domain-hint" className="text-xs text-brand-gray font-geist mt-1.5">
                 Enter a valid domain (e.g. example.com)
@@ -154,7 +193,7 @@ export default function AddDomainModal({ open, onOpenChange }: Props) {
             <Button
               onClick={handleSubmit}
               disabled={loading}
-              className="px-8 bg-[#072E28] text-white hover:bg-[#072E28]/90 rounded-[12px] h-12 text-[16px] font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+              className="px-8 bg-primary text-white hover:bg-primary-hover rounded-xl h-12 text-base font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
             >
               {loading ? "Saving..." : "Continue to verification"}
               {!loading && <ArrowRight size={16} />}

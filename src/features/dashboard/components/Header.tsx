@@ -12,7 +12,6 @@ import {
   FileText,
   Settings,
   LogOut,
-  ChevronDown,
   ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -50,7 +49,6 @@ function getPageHeaderInfo(pathname: string) {
 
 export function DashboardHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -141,12 +139,8 @@ export function DashboardHeader() {
         {/* Right side (User Avatar) */}
         <div className='items-center gap-4 ml-auto order-4 hidden md:flex'>
           {/* User avatar */}
-          <div className='relative hidden md:block'>
-            <button
-              type='button'
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className='flex items-center gap-2 bg-brand-bg hover:bg-gray-100 rounded-[12px] pt-[4.8px] pr-[9.59px] pb-[4.8px] pl-[4.8px] transition-colors'
-            >
+          <div id="tour-header-profile" className='relative hidden md:block'>
+            <div className='flex items-center gap-2 bg-brand-bg rounded-[12px] px-2.5 py-1'>
               {picture ? (
                 <Image
                   src={picture}
@@ -160,7 +154,7 @@ export function DashboardHeader() {
                   {initials}
                 </div>
               )}
-              <div className='flex flex-col items-start leading-none'>
+              <div className='flex flex-col items-start leading-none pr-1'>
                 <span className='text-sm font-medium text-brand-dark capitalize'>
                   {displayName}
                 </span>
@@ -168,42 +162,7 @@ export function DashboardHeader() {
                   {displayEmail}
                 </span>
               </div>
-              <ChevronDown className='h-4 w-4 text-gray-400' />
-            </button>
-
-            {userMenuOpen && (
-              <>
-                <div
-                  className='fixed inset-0 z-10'
-                  onClick={() => setUserMenuOpen(false)}
-                />
-                <div className='absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1'>
-                  <div className='px-3 py-2 border-b border-gray-100'>
-                    <p className='text-sm font-medium text-brand-dark capitalize'>
-                      {displayName}
-                    </p>
-                    <p className='text-xs text-brand-muted truncate'>
-                      {displayEmail}
-                    </p>
-                  </div>
-                  <Link
-                    href='/settings'
-                    onClick={() => setUserMenuOpen(false)}
-                    className='flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                  >
-                    <Settings className='h-4 w-4' />
-                    Settings
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50'
-                  >
-                    <LogOut className='h-4 w-4' />
-                    Sign out
-                  </button>
-                </div>
-              </>
-            )}
+            </div>
           </div>
         </div>
       </header>

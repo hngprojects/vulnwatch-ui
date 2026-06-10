@@ -68,6 +68,14 @@
   --color-scan-primary-900: #072e28;
   --color-scan-dark-700: #2b2b2b;
 
+  /* Additional App Colors */
+  --color-brand-indigo: #6366F1;
+  --color-brand-indigo-dark: #4338CA;
+  --color-brand-indigo-bg: #EEF2FF;
+  --color-brand-green-bright: #0EC965;
+  --color-brand-icon-dark: #292D32;
+  --color-primary-hover: #062420;
+
   /* How It Works Section Theme Tokens */
   --color-brand-mint: #f1fcea;
   --color-brand-border-gray: #e0e0e0;
@@ -415,4 +423,12 @@ input:-webkit-autofill:active {
 .recharts-pie-sector:focus-visible {
   outline: 2px solid #1DAF61;
   outline-offset: 2px;
+}
+
+/* Tour Spotlight */
+.tour-highlight-active {
+  position: relative !important;
+  z-index: 99999 !important;
+  transition: all 0.3s ease;
+  pointer-events: none;
 }

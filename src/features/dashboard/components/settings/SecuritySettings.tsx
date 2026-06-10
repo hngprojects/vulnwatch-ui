@@ -5,6 +5,7 @@ import { Loader2, X, Eye, EyeOff } from "lucide-react";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { privateApi } from "@/lib/axios";
+import { SecuritySettingsSchema } from "@/schemas";
 import {
   Dialog,
   DialogClose,
@@ -60,18 +61,9 @@ const ChangePasswordModal = ({ open, onOpenChange }: ChangePasswordModalProps) =
   };
 
   const handleSubmit = async () => {
-    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
-      toast.error("All fields are required.");
-      return;
-    }
-
-    if (form.newPassword !== form.confirmPassword) {
-      toast.error("New password and confirm password do not match.");
-      return;
-    }
-
-    if (form.newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters.");
+    const result = SecuritySettingsSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
       return;
     }
 

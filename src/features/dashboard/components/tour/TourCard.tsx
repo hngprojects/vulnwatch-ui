@@ -1,6 +1,6 @@
 'use client'
 
-import { TourStep } from '../../data/tourSteps'
+import { TourStep, ArrowDirection } from '../../data/tourSteps'
 import { ArrowRight } from 'lucide-react'
 
 interface TourCardProps {
@@ -9,26 +9,45 @@ interface TourCardProps {
     totalSteps: number
     onNext: () => void
     onSkip: () => void
+    actualArrow?: ArrowDirection
 }
 
-export function TourCard({ step, currentIndex, totalSteps, onNext, onSkip }: TourCardProps) {
+export function TourCard({ step, currentIndex, totalSteps, onNext, onSkip, actualArrow }: TourCardProps) {
+    const arrow = actualArrow || step.arrow
+
     return (
         <div className="relative bg-white z-9999 rounded-[12px] p-4 md:p-6 w-[285px] md:w-[480px] shadow-lg border-2 border-primary">
 
-            {/* Arrow — top (desktop only - step 4) */}
-            {step.arrow === 'top' && (
+            {/* Arrow — top */}
+            {arrow === 'top' && (
                 <div className="hidden md:block absolute -top-5 left-1/2 -translate-x-1/2 w-0 h-0
                     border-l-[14px] border-l-transparent
                     border-r-[14px] border-r-transparent
                     border-b-[16px] border-b-primary" />
             )}
 
-            {/* Arrow — left (desktop only, for steps 1-3) */}
-            {step.arrow === 'left' && (
+            {/* Arrow — bottom */}
+            {arrow === 'bottom' && (
+                <div className="hidden md:block absolute -bottom-5 left-1/2 -translate-x-1/2 w-0 h-0
+                    border-l-[14px] border-l-transparent
+                    border-r-[14px] border-r-transparent
+                    border-t-[16px] border-t-primary" />
+            )}
+
+            {/* Arrow — left */}
+            {arrow === 'left' && (
                 <div className="hidden md:block absolute -left-5 top-1/2 -translate-y-1/2 w-0 h-0
                     border-t-[14px] border-t-transparent
                     border-b-[14px] border-b-transparent
                     border-r-[16px] border-r-primary" />
+            )}
+
+            {/* Arrow — right */}
+            {arrow === 'right' && (
+                <div className="hidden md:block absolute -right-5 top-1/2 -translate-y-1/2 w-0 h-0
+                    border-t-[14px] border-t-transparent
+                    border-b-[14px] border-b-transparent
+                    border-l-[16px] border-l-primary" />
             )}
 
             {/* Label */}

@@ -71,7 +71,12 @@ export default function Report() {
     const load = async () => {
       setHistoryLoading(true);
       try {
-        const res = await scanService.getScanHistory(domainId, { page, page_size: 5 });
+        const res = await scanService.getScanHistory(domainId, { 
+          page, 
+          page_size: 5,
+          sort_by: "createdAt",
+          order: "desc"
+        });
         if (res.isSuccess && res.value) {
           const total = res.value.totalPages || 1;
           setHistory(res.value.data || []);

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Mail, ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import type { MonitoredEmail } from "../../types/compliance.types";
 import { useActiveDomainId, useDeleteMonitoredEmail } from "../../hooks/use-compliance";
@@ -71,22 +70,35 @@ export function BreachCard({ breach }: { breach: MonitoredEmail }) {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove Monitored Email</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to stop monitoring <strong>{breach.emailAddress}</strong>? This action cannot be undone.
+        <DialogContent className="sm:max-w-[401px] p-6 gap-6 rounded-xl bg-white border-0 shadow-xl [&>button]:hidden">
+          <DialogHeader className="p-0 m-0 space-y-0 text-left">
+            <DialogTitle className="text-xl font-semibold leading-5 tracking-tight text-brand-dark">
+              Are you sure you want to remove?
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              This will remove {breach.emailAddress} from monitoring.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-4 flex flex-row items-center gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isDeleting}>
+          
+          <div className="flex flex-row items-center gap-4 w-full">
+            <button
+              type="button"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isDeleting}
+              className="flex-1 flex flex-row justify-center items-center px-6 py-4 h-12 border border-brand-light-gray rounded-lg text-base font-medium leading-none tracking-tight text-brand-gray hover:bg-gray-50 transition-colors"
+            >
               Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Now
-            </Button>
-          </DialogFooter>
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="flex-1 flex flex-row justify-center items-center px-6 py-4 h-12 bg-primary rounded-lg text-base font-medium leading-none tracking-tight text-white hover:bg-primary-hover transition-colors gap-2"
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Continue
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -7,6 +7,7 @@ import { Sidebar } from "@/features/dashboard/components/Sidebar";
 import { DashboardHeader } from "@/features/dashboard/components/Header";
 import { useAuthStore } from "@/store/auth.store";
 import { domainService } from "@/features/domain/services/domain.service";
+import { TourProvider } from "@/features/dashboard/components/tour/TourProvider";
 
 function subscribeAuthStore(listener: () => void) {
   return useAuthStore.subscribe(listener);
@@ -123,6 +124,7 @@ export default function DashboardLayout({
       <Sidebar />
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+        <TourProvider />
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto">
           {children}

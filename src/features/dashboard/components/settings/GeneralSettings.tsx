@@ -8,11 +8,11 @@ import { useAuthStore } from "@/store/auth.store";
 import { useProfile } from "../../hooks/useProfile";
 import { profileService } from "../../services/profile.service";
 import DeleteAccountSection from "./DeleteAccountSection";
-import EditProfileModal from "./EditProfileModal";
+import EditProfilePictureModal from "./EditProfilePictureModal";
 import PersonalInfoCard from "./PersonalInfoCard";
 import SettingsErrorState from "./SettingsErrorState";
 import SettingsSectionSkeleton from "./SettingsSectionSkeleton";
-import { type ProfileForm } from "./types";
+import { profileFormSchema, type ProfileForm } from "./types";
 
 function Section({
   title,
@@ -111,51 +111,38 @@ const GeneralSettingsContent = ({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(
-    profile.notificationPreferences?.emailAlerts ?? false
-  );
-  const [slackNotifications, setSlackNotifications] = useState(
-    profile.notificationPreferences?.slackAlerts ?? false
-  );
-  const [pushNotifications, setPushNotifications] = useState(
-    profile.notificationPreferences?.pushNotifications ?? false
-  );
+  const [isPictureModalOpen, setIsPictureModalOpen] = useState(false);
+  const [preferences, setPreferences] = useState({
+    emailAlerts: profile.notificationPreferences?.emailAlerts ?? false,
+    slackAlerts: profile.notificationPreferences?.slackAlerts ?? false,
+    pushNotifications: profile.notificationPreferences?.pushNotifications ?? false,
+  });
 
-  const handleTogglePreference = async (
-    key: "emailAlerts" | "slackAlerts" | "pushNotifications",
-    currentValue: boolean
+  const handleTogglePreference = (
+    key: "emailAlerts" | "slackAlerts" | "pushNotifications"
   ) => {
-    const newValue = !currentValue;
-    
-    // Optimistic update
-    if (key === "emailAlerts") setEmailNotifications(newValue);
-    if (key === "slackAlerts") setSlackNotifications(newValue);
-    if (key === "pushNotifications") setPushNotifications(newValue);
+    setPreferences((prev) => {
+      const newPrefs = { ...prev, [key]: !prev[key] };
+      
+      profileService.updateNotificationPreferences(newPrefs)
+        .then(() => toast.success("Preferences updated successfully"))
+        .catch((err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to update preferences");
+          setPreferences((current) => ({ ...current, [key]: prev[key] }));
+        });
 
-    try {
-      await profileService.updateNotificationPreferences({
-        emailAlerts: key === "emailAlerts" ? newValue : emailNotifications,
-        slackAlerts: key === "slackAlerts" ? newValue : slackNotifications,
-        pushNotifications: key === "pushNotifications" ? newValue : pushNotifications,
-      });
-      toast.success("Preferences updated successfully");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update preferences");
-      // Revert on failure
-      if (key === "emailAlerts") setEmailNotifications(currentValue);
-      if (key === "slackAlerts") setSlackNotifications(currentValue);
-      if (key === "pushNotifications") setPushNotifications(currentValue);
-    }
+      return newPrefs;
+    });
   };
 
-  const initialForm = {
+  const initialForm: ProfileForm = useMemo(() => ({
     firstName: profile.firstName ?? "",
     lastName: profile.lastName ?? "",
     email: profile.email ?? "",
-  };
+  }), [profile]);
 
   const [form, setForm] = useState<ProfileForm>(initialForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof ProfileForm, string>>>({});
 
   const isDirty = useMemo(() => {
     return (
@@ -163,26 +150,30 @@ const GeneralSettingsContent = ({
       form.lastName !== initialForm.lastName ||
       form.email !== initialForm.email
     );
-  }, [form, initialForm.email, initialForm.firstName, initialForm.lastName]);
-
-  const handleOpenEditModal = () => {
-    setForm(initialForm);
-    setIsEditModalOpen(true);
-  };
+  }, [form, initialForm]);
 
   const handleCancelEdit = () => {
     if (saving) return;
 
     setForm(initialForm);
-    setIsEditModalOpen(false);
+    setErrors({});
   };
 
   const handleSave = async () => {
-    if (!form.firstName.trim() || !form.lastName.trim()) {
-      toast.error("First name and last name are required.");
+    const result = profileFormSchema.safeParse(form);
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof ProfileForm, string>> = {};
+      result.error.issues.forEach(issue => {
+        const path = issue.path[0] as keyof ProfileForm;
+        if (!fieldErrors[path]) {
+          fieldErrors[path] = issue.message;
+        }
+      });
+      setErrors(fieldErrors);
       return;
     }
 
+    setErrors({});
     setSaving(true);
 
     try {
@@ -204,7 +195,6 @@ const GeneralSettingsContent = ({
         updated.profilePictureUrl || currentPicture
       );
       toast.success("Profile updated successfully!");
-      setIsEditModalOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update profile.");
     } finally {
@@ -230,9 +220,18 @@ const GeneralSettingsContent = ({
   return (
     <div className="space-y-6">
       <PersonalInfoCard 
-        profile={initialForm} 
+        form={form} 
         pictureUrl={profile.profilePictureUrl || useAuthStore.getState().picture} 
-        onEdit={handleOpenEditModal} 
+        saving={saving}
+        isDirty={isDirty}
+        errors={errors}
+        onFormChange={(newForm) => {
+          setForm(newForm);
+          setErrors({});
+        }}
+        onCancel={handleCancelEdit}
+        onSave={handleSave}
+        onEditPicture={() => setIsPictureModalOpen(true)}
       />
 
       <Section
@@ -242,31 +241,25 @@ const GeneralSettingsContent = ({
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <Toggle
             label="Email Notifications"
-            checked={emailNotifications}
-            onChange={() => handleTogglePreference("emailAlerts", emailNotifications)}
+            checked={preferences.emailAlerts}
+            onChange={() => handleTogglePreference("emailAlerts")}
           />
           <Toggle
             label="Slack Notifications"
-            checked={slackNotifications}
-            onChange={() => handleTogglePreference("slackAlerts", slackNotifications)}
+            checked={preferences.slackAlerts}
+            onChange={() => handleTogglePreference("slackAlerts")}
           />
           <Toggle
             label="Push Notifications"
-            checked={pushNotifications}
-            onChange={() => handleTogglePreference("pushNotifications", pushNotifications)}
+            checked={preferences.pushNotifications}
+            onChange={() => handleTogglePreference("pushNotifications")}
           />
         </div>
       </Section>
 
-      <EditProfileModal
-        open={isEditModalOpen}
-        form={form}
-        saving={saving}
-        isDirty={isDirty}
-        onOpenChange={setIsEditModalOpen}
-        onFormChange={setForm}
-        onCancel={handleCancelEdit}
-        onSave={handleSave}
+      <EditProfilePictureModal
+        open={isPictureModalOpen}
+        onOpenChange={setIsPictureModalOpen}
       />
 
       <DeleteAccountSection

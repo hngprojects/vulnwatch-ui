@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Upload, Plus, Loader2, Globe2, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { SecurityPostureTab } from "./security-posture/SecurityPostureTab";
 import { PhishingDetectionTab } from "./phishing-detection/PhishingDetectionTab";
@@ -12,17 +11,18 @@ import { useActiveDomainId, useAddMonitoredEmail } from "../hooks/use-compliance
 import { complianceService } from "../services/compliance.service";
 import { AddEmailDialog } from "./credential-monitoring/AddEmailDialog";
 import { toast } from "sonner";
+import { Tabs, type TabOption } from "@/components/ui/tabs";
 
 
 // ── Tab definitions ────────────────────────────────────────────────────────
 
-const TABS = [
+const TABS: TabOption<"owasp" | "phishing" | "credentials">[] = [
   { id: "owasp", label: "Security Posture" },
   { id: "phishing", label: "Phishing Detection" },
   { id: "credentials", label: "Credential Monitoring" },
-] as const;
+];
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = "owasp" | "phishing" | "credentials";
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
@@ -37,7 +37,6 @@ export default function TrustCompliancePage() {
   
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const tabContainerRef = useRef<HTMLDivElement>(null);
   
   const selectedDomain = verifiedDomains.find(d => d.id === activeDomainId) || null;
 
@@ -50,21 +49,6 @@ export default function TrustCompliancePage() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  useEffect(() => {
-    // Timeout ensures DOM has updated its layout before we scroll
-    const timer = setTimeout(() => {
-      const activeTabElement = document.getElementById(`tab-${activeTab}`);
-      if (activeTabElement && tabContainerRef.current) {
-        activeTabElement.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "end",
-        });
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [activeTab]);
 
   const handleDomainSelect = (domainId: string) => {
     setDropdownOpen(false);
@@ -107,54 +91,14 @@ export default function TrustCompliancePage() {
       {/* ── Top bar: tabs + actions ── */}
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {/* Tab list — scrollable on mobile */}
-        <div ref={tabContainerRef} className="overflow-x-auto scrollbar-none w-full min-w-0">
-          <div
-            role="tablist"
-            aria-label="Trust and Compliance sections"
-            className="flex shrink-0 items-end gap-8 md:gap-20 pr-4"
-          >
-            {TABS.map((tab, index) => (
-              <button
-                key={tab.id}
-                id={`tab-${tab.id}`}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                aria-controls={`tabpanel-${tab.id}`}
-                tabIndex={activeTab === tab.id ? 0 : -1}
-                onClick={() => setActiveTab(tab.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowRight") {
-                    const next = TABS[(index + 1) % TABS.length];
-                    setActiveTab(next.id);
-                    document.getElementById(`tab-${next.id}`)?.focus();
-                  } else if (e.key === "ArrowLeft") {
-                    const prev = TABS[(index - 1 + TABS.length) % TABS.length];
-                    setActiveTab(prev.id);
-                    document.getElementById(`tab-${prev.id}`)?.focus();
-                  }
-                }}
-                className={cn(
-                  "flex flex-col items-center gap-4 whitespace-nowrap text-sm md:text-base tracking-wide transition-colors",
-                  activeTab === tab.id
-                    ? "font-medium text-scan-primary-900"
-                    : "font-normal text-brand-gray hover:text-brand-dark"
-                )}
-              >
-                <span>{tab.label}</span>
-                {/* Active underline */}
-                {activeTab === tab.id ? (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="block h-[5px] w-full rounded-full bg-scan-primary-900"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                ) : (
-                  <div className="block h-[5px] w-full rounded-full bg-transparent" />
-                )}
-              </button>
-            ))}
-          </div>
+        <div className="w-full min-w-0 md:max-w-fit pr-4 md:pr-8">
+          <Tabs
+            tabs={TABS}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            ariaLabel="Trust and Compliance sections"
+            layoutId="trustComplianceTabsIndicator"
+          />
         </div>
 
         {/* Right-side actions */}

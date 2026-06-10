@@ -8,7 +8,7 @@ export function useTour() {
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [isVisible, setIsVisible] = useState(() => {
         if (typeof window === 'undefined') return false
-        return !localStorage.getItem(TOUR_KEY)
+        return localStorage.getItem(TOUR_KEY) !== 'true'
     })
 
     useEffect(() => {

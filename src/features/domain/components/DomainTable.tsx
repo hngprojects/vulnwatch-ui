@@ -178,7 +178,15 @@ export default function DomainTable({ domains, loading = false, error = null, on
       return matchesSearch && matchesStatus && matchesMethod;
     });
 
-    if (sortKey === "DOMAIN_AZ") list = [...list].sort((a, b) => a.domain.localeCompare(b.domain));
+    if (sortKey === "NONE") {
+      // Default: Latest added first
+      list = [...list].sort((a, b) => {
+        if (!a.createdAt && !b.createdAt) return 0;
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    } else if (sortKey === "DOMAIN_AZ") list = [...list].sort((a, b) => a.domain.localeCompare(b.domain));
     else if (sortKey === "DOMAIN_ZA") list = [...list].sort((a, b) => b.domain.localeCompare(a.domain));
     else if (sortKey === "LAST_SCAN") list = [...list].sort((a, b) => {
       if (!a.lastScannedAt && !b.lastScannedAt) return 0;
