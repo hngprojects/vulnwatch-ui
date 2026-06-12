@@ -29,6 +29,9 @@ export function TourProvider() {
         
         // If element is not yet rendered or visible, fallback to center and wait for polling
         if (!targetElement) {
+            document.querySelectorAll('.tour-highlight-active').forEach(el => {
+                el.classList.remove('tour-highlight-active')
+            })
             setCardStyle({
                 opacity: 1,
                 pointerEvents: 'auto',

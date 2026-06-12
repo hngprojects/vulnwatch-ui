@@ -166,6 +166,7 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
     setStatus("failed");
     setStepStatuses((prev) => prev.map((s) => (s === "current" ? "pending" : s)));
     if (timerIdRef.current) clearInterval(timerIdRef.current);
+    if (pollerIdRef.current) clearInterval(pollerIdRef.current);
   }, []);
 
   useEffect(() => {
@@ -174,6 +175,11 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
 
     // Initialize Simulation Logic
     const initSimulation = () => {
+      setProgress(0);
+      setStatus("running");
+      setScanResult(null);
+      setStepStatuses(["current", "pending", "pending", "pending", "pending"]);
+
       let absoluteStart = initiatedAtParam ? new Date(initiatedAtParam).getTime() : Date.now();
       if (!Number.isFinite(absoluteStart)) absoluteStart = Date.now();
       
@@ -239,14 +245,17 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
           if (res.value.status === "Completed") {
             triggerFastForward(res.value);
             if (pollerIdRef.current) clearInterval(pollerIdRef.current);
+            return true;
           } else if (res.value.status === "Failed") {
             handleFailure();
             if (pollerIdRef.current) clearInterval(pollerIdRef.current);
+            return true;
           }
         }
       } catch (err) {
         console.warn("Poll check failed", err);
       }
+      return false;
     };
 
     const initConnection = async () => {
@@ -254,7 +263,8 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
       initSimulation();
       
       // Initial API check for quick resolution
-      await checkStatus();
+      const isTerminal = await checkStatus();
+      if (isTerminal) return;
 
       // Start 30s Poller (Safety Net)
       pollerIdRef.current = setInterval(checkStatus, 30_000);

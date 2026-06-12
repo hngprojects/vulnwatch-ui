@@ -236,7 +236,7 @@ export default function ScanCompleteModal({
                         });
                         if (res.isSuccess && res.value?.scanId) {
                           // Force a hard reload on the new URL to reset all states cleanly
-                          window.location.href = `/scan/progress?scanId=${res.value.scanId}&domain=${encodeURIComponent(domain)}&initiatedAt=${encodeURIComponent(new Date().toISOString())}`;
+                          window.location.href = `/scan/progress?scanId=${res.value.scanId}&domain=${encodeURIComponent(domain)}&initiatedAt=${encodeURIComponent(res.value.initiatedAt || new Date().toISOString())}`;
                         } else {
                           router.push("/domain");
                         }

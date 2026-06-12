@@ -34,6 +34,11 @@ export default function ScanProgress({ scanId }: ScanProgressProps) {
         setShowModal(true);
       }, 3000);
       return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => {
+        setShowModal(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [isCompleted]);
 
