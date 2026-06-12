@@ -6,34 +6,44 @@ const RADIUS = 90;
  * ScanningProgress
  *
  * Props:
- *   value  {number}  0–100  (default: 25)
- *   label     {string}         text below percentage (default: "Scanning....")
- *   size      {number}         outer container px size (default: 280)
- *   color     {string}         arc stroke color (default: "#3D4EFF")
- *   trackColor {string}        background track color (default: "#E8EAFF")
+ *   isCompleted {boolean}      whether the scan is fully 100% completed
+ *   isFailed    {boolean}      whether the scan failed
+ *   size        {number}       outer container px size (default: 340)
+ *   color       {string}       arc stroke color (default: "#3D4EFF")
+ *   trackColor  {string}       background track color (default: "#E8EAFF")
  */
 export default function ScanningProgress({
-  value = 25,
-  label = "Scanning....",
+  isCompleted = false,
+  isFailed = false,
   size = 340,
   color = "#3D4EFF",
   trackColor = "#E8EAFF",
 }: {
-  value?: number;
-  label?: string;
+  isCompleted?: boolean;
+  isFailed?: boolean;
   size?: number;
   color?: string;
   trackColor?: string;
 }) {
-  const pct = Math.round(Math.min(100, Math.max(0, value)));
-
   const svgSize = size * (220 / 280);
   const cx = svgSize / 2;
   const cy = svgSize / 2;
   const scaledRadius = RADIUS * (svgSize / 220);
   const scaledCircumference = 2 * Math.PI * scaledRadius;
-  const scaledOffset = scaledCircumference * (1 - pct / 100);
   const ringBaseSize = scaledRadius * 2 + 14;
+
+  const displayColor = isFailed ? "#ef4444" : color;
+  const titleText = isFailed 
+    ? "Scan Failed" 
+    : isCompleted 
+      ? "Scan Complete!" 
+      : "Running comprehensive checks";
+  
+  const subtitleText = isFailed 
+    ? "An error occurred during the scan." 
+    : isCompleted 
+      ? "Finalizing report..." 
+      : "This usually takes 2-10 minutes";
 
   return (
     <div
@@ -76,15 +86,29 @@ export default function ScanningProgress({
         .sonar-ring {
           animation: sonar-ripple 6s linear infinite;
         }
+        
+        @keyframes indeterminate-spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+        .indeterminate-spin {
+          animation: indeterminate-spin 1.5s linear infinite;
+          transform-origin: center;
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .sonar-ring {
+          .sonar-ring, .indeterminate-spin {
             animation: none !important;
           }
         }
       `}</style>
 
       {/* Outer pulsing rings originating from the center and expanding outward */}
-      {[0, -1.2, -2.4, -3.6, -4.8].map((delay, i) => {
+      {(!isCompleted && !isFailed) && [0, -1.2, -2.4, -3.6, -4.8].map((delay, i) => {
         return (
           <div
             key={i}
@@ -94,7 +118,7 @@ export default function ScanningProgress({
               width: ringBaseSize,
               height: ringBaseSize,
               borderRadius: "50%",
-              border: "1.2px solid #292DEC",
+              border: `1.2px solid ${displayColor}`,
               pointerEvents: "none",
               animationDelay: `${delay}s`,
             }}
@@ -102,35 +126,43 @@ export default function ScanningProgress({
         );
       })}
 
-      {/* SVG arc */}
+      {/* Track SVG (Static) */}
       <svg
         width={svgSize}
         height={svgSize}
         viewBox={`0 0 ${svgSize} ${svgSize}`}
-        style={{ position: "absolute" }}
+        style={{ position: "absolute", transform: "rotate(-90deg)" }}
       >
-        {/* Track */}
         <circle
           cx={cx}
           cy={cy}
           r={scaledRadius}
           fill="none"
-          stroke={trackColor}
+          stroke={isFailed ? "#fee2e2" : trackColor}
           strokeWidth={14}
         />
-        {/* Progress arc */}
+      </svg>
+
+      {/* Progress arc SVG (Spinning or Filled) */}
+      <svg
+        width={svgSize}
+        height={svgSize}
+        viewBox={`0 0 ${svgSize} ${svgSize}`}
+        style={{ position: "absolute", transform: "rotate(-90deg)" }}
+        className={(!isCompleted && !isFailed) ? "indeterminate-spin" : ""}
+      >
         <circle
           cx={cx}
           cy={cy}
           r={scaledRadius}
           fill="none"
-          stroke={color}
+          stroke={displayColor}
           strokeWidth={14}
           strokeLinecap="round"
+          /* If completed/failed, fill it 100%. If running, 25% arc. */
           strokeDasharray={scaledCircumference}
-          strokeDashoffset={scaledOffset}
-          transform={`rotate(-90 ${cx} ${cy})`}
-          style={{ transition: "stroke-dashoffset 0.4s ease" }}
+          strokeDashoffset={(isCompleted || isFailed) ? 0 : scaledCircumference * 0.75}
+          style={{ transition: "stroke-dashoffset 0.8s ease-in-out" }}
         />
       </svg>
 
@@ -143,26 +175,29 @@ export default function ScanningProgress({
           flexDirection: "column",
           alignItems: "center",
           gap: 4,
+          padding: 24,
         }}
       >
         <span
           style={{
-            fontSize: size * 0.128,
-            fontWeight: 500,
-            color: "#666666",
-            lineHeight: 1,
+            fontSize: size * 0.055,
+            fontWeight: 600,
+            color: isFailed ? "#ef4444" : "#1e293b",
+            lineHeight: 1.3,
+            textAlign: "center",
           }}
         >
-          {pct}%
+          {titleText}
         </span>
         <span
           style={{
-            fontSize: size * 0.046,
-            color: color,
-            letterSpacing: "0.02em",
+            fontSize: size * 0.038,
+            color: isFailed ? "#f87171" : "#64748b",
+            textAlign: "center",
+            marginTop: 4,
           }}
         >
-          {label}
+          {subtitleText}
         </span>
       </div>
     </div>
