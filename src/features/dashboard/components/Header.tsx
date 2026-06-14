@@ -234,6 +234,7 @@ export function DashboardHeader() {
             return (
               <Link
                 key={href}
+                id={label === 'Settings' ? 'tour-mobile-settings' : undefined}
                 href={href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
