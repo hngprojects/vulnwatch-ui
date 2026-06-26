@@ -209,7 +209,7 @@ export function DashboardStatCards({
   allVerified = true,
 }: DashboardStatCardsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 items-stretch gap-4 md:gap-6 w-full">
+    <div id="tour-stat-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 items-stretch gap-4 md:gap-6 w-full">
       {/* Security Score */}
       <StatCard
         label="Security Score"

@@ -1,0 +1,222 @@
+"use client";
+
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { waitlistService } from "../services/waitlist.services";
+
+const waitlistSchema = z.object({
+  workEmail: z.string().email({ message: "Please enter a valid work email." }),
+  company: z.string().min(1, { message: "Company name is required." }),
+  feature: z.string().min(1, { message: "Please select a feature." }),
+  additionalInfo: z.string().optional(),
+});
+
+type WaitlistFormValues = z.infer<typeof waitlistSchema>;
+
+const featuresList = [
+  "Slack alerts",
+  "Microsoft Teams Alerts",
+  "GitLab Support",
+  "Bitbucket Support",
+  "SBOM Expert (CycloneDX)",
+  "Jira Auto-ticketing",
+  "SSO / SAML",
+  "Per-repo Severity Policies",
+  "PR Comment Bot",
+  "License Compliance"
+];
+
+export function WaitlistForm() {
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const form = useForm<WaitlistFormValues>({
+    resolver: zodResolver(waitlistSchema),
+    defaultValues: {
+      workEmail: "",
+      company: "",
+      feature: "",
+      additionalInfo: "",
+    },
+  });
+
+  const onSubmit = async (data: WaitlistFormValues) => {
+    try {
+      const combinedComments = `Selected Feature: ${data.feature}${
+        data.additionalInfo ? ` | Comments: ${data.additionalInfo}` : ""
+      }`;
+
+      const response = await waitlistService.join({
+        email: data.workEmail,
+        companyName: data.company,
+        comments: combinedComments,
+      });
+
+      if (response.isSuccess && response.value) {
+        setIsSubmitted(true);
+      } else {
+        form.setError("root", { 
+          type: "manual", 
+          message: response.error?.message || "Failed to join waitlist. Please try again." 
+        });
+      }
+    } catch (error) {
+      console.error("Waitlist submission error:", error);
+      form.setError("root", { 
+        type: "manual", 
+        message: "An unexpected error occurred. Please try again later." 
+      });
+    }
+  };
+
+  if (isSubmitted) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-brand-bg-light p-12 text-center shadow-sm">
+        <CheckCircle2 className="mb-4 h-16 w-16 text-secondary" />
+        <h3 className="mb-2 text-2xl font-semibold text-brand-dark">Almost there!</h3>
+        <p className="text-brand-gray">
+          Thank you for joining the waitlist. We&apos;ve sent a verification link to your email address. Please click the link to confirm your email and secure your spot.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white p-6 md:p-8 w-full max-w-3xl ml-auto">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-8">
+          
+          <div className="flex flex-col md:flex-row gap-6">
+            <FormField
+              control={form.control}
+              name="workEmail"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="text-brand-dark font-semibold text-base flex items-center gap-2">
+                    Work Email 
+                    <span className="h-3 w-3 rounded-full bg-green-400" />
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative mt-2">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-gray" />
+                      <Input placeholder="you@company.com" className="h-14 rounded-xl border-gray-200 pl-11 text-base placeholder:text-brand-gray" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="company"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="text-brand-dark font-semibold text-base">Company</FormLabel>
+                  <FormControl>
+                    <div className="mt-2">
+                      <Input placeholder="Acme Inc." className="h-14 rounded-xl border-gray-200 text-base placeholder:text-brand-gray px-4" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="feature"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-brand-dark font-semibold text-base">Which Feature Would You Actually Use?</FormLabel>
+                <FormControl>
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    {featuresList.map((fw) => {
+                      const isSelected = field.value === fw;
+                      return (
+                        <button
+                          key={fw}
+                          type="button"
+                          onClick={() => field.onChange(fw)}
+                          className={cn(
+                            "rounded-xl border h-12 px-4 text-base transition-colors",
+                            isSelected 
+                              ? "border-primary bg-primary text-white" 
+                              : "border-primary bg-white text-primary hover:bg-gray-50"
+                          )}
+                        >
+                          {fw}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="additionalInfo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex justify-between items-center mb-2">
+                  <span className="text-brand-dark font-semibold text-base">Anything Else You&apos;d Love to See?</span>
+                  <span className="text-brand-gray font-normal text-base hidden md:inline">Free text, we read every one</span>
+                </FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="e.g. native ServiceNow tickets, custom severity rules per repo, support for Terraform modules......" 
+                    className="min-h-[192px] rounded-xl border-gray-200 text-base placeholder:text-brand-gray resize-none p-4" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex flex-col items-center gap-6 mt-2">
+            {form.formState.errors.root && (
+              <p className="text-red-500 text-sm font-medium text-center">
+                {form.formState.errors.root.message}
+              </p>
+            )}
+            
+            <Button 
+              type="submit" 
+              disabled={form.formState.isSubmitting}
+              className="group h-14 w-full rounded-xl bg-primary border border-green-400 text-lg font-semibold text-white hover:bg-primary/90"
+            >
+              {form.formState.isSubmitting ? "Submitting..." : "Join Waitlist"}
+              {!form.formState.isSubmitting && (
+                <ArrowRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1" />
+              )}
+            </Button>
+
+            <p className="text-center text-base text-brand-gray">
+              No spam. Unsubscribe anytime. We never share your email.
+            </p>
+          </div>
+
+        </form>
+      </Form>
+
+      <div className="mt-8 pt-6 border-t border-gray-100 text-center text-base text-brand-gray">
+        Already registered?{" "}
+        <a href="/waitlist/status" className="font-semibold text-primary hover:underline">
+          Check your waitlist status
+        </a>
+      </div>
+    </div>
+  );
+}

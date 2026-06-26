@@ -171,6 +171,7 @@ export function MonitoredDomains({
 
         {/* Add domain button — text only, no icon (PlusCircle is display:none in Figma) */}
         <button
+          data-tour="add-domain"
           type="button"
           onClick={onAddDomain}
           className="flex items-center justify-center hover:opacity-90 transition-opacity"

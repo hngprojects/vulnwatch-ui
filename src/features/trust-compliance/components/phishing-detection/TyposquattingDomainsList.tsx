@@ -1,6 +1,17 @@
-import { Eye, AlertCircle, Shield } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Eye, AlertCircle, Shield, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BrandThreat } from "../../types/compliance.types";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const STATUS_CONFIG: Record<
   string,
@@ -24,6 +35,13 @@ export function TyposquattingDomainsList({
 }: {
   domains: BrandThreat[];
 }) {
+  const [selectedDomain, setSelectedDomain] = useState<BrandThreat | null>(null);
+
+  const handleReportProblem = () => {
+    toast.success("Sent successfully");
+    setSelectedDomain(null);
+  };
+
   return (
     <div className="rounded-xl bg-white p-6 border border-brand-light-gray flex flex-col gap-6">
       {/* Title row */}
@@ -84,20 +102,133 @@ export function TyposquattingDomainsList({
                   </div>
                 </div>
 
-                {/* Right side action button — disabled until takedown flow is wired */}
+                {/* Right side action button */}
                 <button
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="rounded-lg bg-brand-sidebar-bg px-6 py-4 text-base font-medium text-brand-gray text-center shrink-0 min-w-[136px] h-12 flex items-center justify-center cursor-not-allowed opacity-60"
+                  onClick={() => setSelectedDomain(item)}
+                  className="rounded-lg bg-brand-sidebar-bg px-6 py-4 text-base font-medium text-brand-dark text-center shrink-0 min-w-[136px] h-12 flex items-center justify-center hover:bg-gray-200 transition-colors"
                 >
-                  Take Action
+                  View Details
                 </button>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Detail Modal */}
+      <Dialog open={!!selectedDomain} onOpenChange={(open) => !open && setSelectedDomain(null)}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[522px] rounded-[12px] p-0 overflow-y-auto max-h-[90vh] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+        >
+          {/* Close button */}
+          <DialogClose className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F3F4F6] hover:bg-[#E5E7EB] flex items-center justify-center transition-colors z-10">
+            <X size={15} className="text-[#374151]" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
+
+          {selectedDomain && (
+            <>
+              <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center gap-3">
+                {/* Icon */}
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+                    selectedDomain.status === "Resolved"
+                      ? "bg-[#ECFDF5] text-[#10B981]"
+                      : "bg-[#FEF2F2] text-[#EF4444]"
+                  }`}
+                >
+                  {selectedDomain.status === "Resolved" ? (
+                    <CheckCircle2 size={32} />
+                  ) : (
+                    <AlertCircle size={32} />
+                  )}
+                </div>
+
+                {/* Status badge */}
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-[20px] ${
+                    selectedDomain.status === "Resolved"
+                      ? "bg-[#ECFDF5] text-[#10B981]"
+                      : "bg-[#FEF2F2] text-[#EF4444]"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      selectedDomain.status === "Resolved" ? "bg-[#10B981]" : "bg-[#EF4444]"
+                    }`}
+                  />
+                  {selectedDomain.status === "Resolved" ? "Resolved" : "Active Threat"}
+                </span>
+
+                {/* Title */}
+                <DialogTitle className="text-[22px] font-bold text-[#111827] leading-tight">
+                  Domain Details
+                </DialogTitle>
+
+                <DialogDescription className="sr-only">
+                  Details for the detected typosquatting domain.
+                </DialogDescription>
+
+                {/* Subtitle */}
+                <p className="text-sm font-medium text-[#666666] max-w-xs leading-relaxed">
+                  We detected{" "}
+                  <span className="font-semibold text-[#2B2B2B]">
+                    {selectedDomain.lookAlikeDomain}
+                  </span>{" "}
+                  as a potential typosquatting threat to your domain.
+                </p>
+              </div>
+
+              {/* Details card */}
+              <div className="mx-6 mb-4 rounded-xl border border-[#DCDCDC] bg-[#F6F6F6] overflow-hidden">
+                {[
+                  { label: "Domain", value: selectedDomain.lookAlikeDomain },
+                  { label: "Variation", value: selectedDomain.variationType },
+                  { label: "Risk Level", value: selectedDomain.riskLevel },
+                  { label: "DNS Resolves", value: selectedDomain.resolvesViaDns ? "Yes" : "No" },
+                  { label: "HTTP Resp", value: selectedDomain.respondedViaHttp ? "Yes" : "No" },
+                  { label: "Status", value: selectedDomain.status },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between px-4 py-3 border-b border-[#DCDCDC] last:border-b-0"
+                  >
+                    <span className="text-sm font-medium text-[#666666]">{label}</span>
+                    <div className="flex items-center gap-2 max-w-[65%] min-w-0">
+                      <span
+                        className={`text-sm truncate select-all ${
+                          label === "Domain"
+                            ? "font-medium text-[#666666]"
+                            : "font-semibold text-[#2B2B2B]"
+                        }`}
+                        title={String(value)}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="px-6 pb-6 flex items-center gap-3">
+            <DialogClose className="flex-1 h-11 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#374151] hover:bg-[#F9FAFB] transition-colors disabled:opacity-60">
+              Close
+            </DialogClose>
+            {selectedDomain?.status !== "Resolved" && (
+              <button
+                onClick={handleReportProblem}
+                className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium flex items-center justify-center gap-2 hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                Report a problem
+              </button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

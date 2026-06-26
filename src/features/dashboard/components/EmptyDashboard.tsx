@@ -31,7 +31,7 @@ export function EmptyDashboard() {
 
       {/* CTA */}
       <Link
-        id="tour-add-domain"
+        data-tour="add-domain"
         href="/domain?add=true"
         className='inline-flex items-center justify-center gap-2 px-8 py-[15px] bg-[#072E28] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity w-full max-w-[320px] md:w-auto md:h-12 md:py-0 whitespace-nowrap'
       >

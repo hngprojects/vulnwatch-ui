@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import PageHeader from "@/features/scans/shared/ui/PageHeader";
 import { Shield, Info } from "lucide-react";
 import ProgressItem from "../ui/ProgressItem/ProgressItem";
@@ -19,18 +20,27 @@ export default function ScanProgress({ scanId }: ScanProgressProps) {
   const activeScanId = scanId || searchParams.get("scanId") || "";
   const initiatedAt = searchParams.get("initiatedAt") || "";
 
-  const { progress, stepStatuses, scanResult, isCompleted } = useScanProgress(
+  const { stepStatuses, scanResult, isCompleted, isFailed } = useScanProgress(
     activeScanId || undefined,
     initiatedAt || undefined
   );
 
-  // Dynamic status label to display inside the circular arc based on progress
-  let progressLabel = "Scanning...";
-  if (progress >= 95 && !isCompleted) {
-    progressLabel = "Finishing up...";
-  } else if (isCompleted) {
-    progressLabel = "Complete!";
-  }
+  const [showModal, setShowModal] = useState(false);
+
+  // Delay the modal to let the 100% circle animation finish visually and let the user see the completed state
+  useEffect(() => {
+    if (isCompleted) {
+      const timer = setTimeout(() => {
+        setShowModal(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => {
+        setShowModal(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isCompleted]);
 
   return (
     <>
@@ -53,7 +63,7 @@ export default function ScanProgress({ scanId }: ScanProgressProps) {
         />
         <div className="grid lg:grid-cols-2 gap-10 w-full items-start">
           <div className="flex justify-center mb-12">
-            <ScanningProgress value={progress} label={progressLabel} />
+            <ScanningProgress isCompleted={isCompleted} isFailed={isFailed} />
           </div>
           <div className="flex justify-center">
             {/* scan sections */}
@@ -75,7 +85,7 @@ export default function ScanProgress({ scanId }: ScanProgressProps) {
       </div>
 
       <ScanCompleteModal
-        open={isCompleted}
+        open={showModal}
         onOpenChange={() => {}} // Modal is kept open until user interacts
         domain={domain}
         scanId={activeScanId || undefined}

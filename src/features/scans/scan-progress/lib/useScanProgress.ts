@@ -1,9 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import { getUserIdFromToken } from "@/lib/jwt";
 import { scanService, ScanReport } from "../../services/scan.service";
-
-const SCAN_DURATION_MS = 90_000; // Simulated duration of 90 seconds (95% cap)
 
 export interface ScanResult {
   scanId: string;
@@ -13,12 +11,13 @@ export interface ScanResult {
   securityScore: number;
 }
 
+export type ScanStatus = "running" | "completed" | "failed";
+
 export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
   const [progress, setProgress] = useState(0);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [status, setStatus] = useState<ScanStatus>("running");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   
-  // Steps status array for the progress items list
   const [stepStatuses, setStepStatuses] = useState<("completed" | "current" | "pending")[]>([
     "current",
     "pending",
@@ -29,10 +28,19 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
 
   const hubConnectionRef = useRef<signalR.HubConnection | null>(null);
   const timerIdRef = useRef<NodeJS.Timeout | null>(null);
-  const fastForwardingRef = useRef(false);
-  const currentProgressRef = useRef(0);
+  const pollerIdRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper to compute duration string
+  // Simulation State Refs
+  const simStateRef = useRef({
+    startTime: 0,
+    fastForwarding: false,
+    isFinished: false,
+    stepDurations: [] as number[],
+    stepStarts: [] as number[],
+    totalDuration: 0,
+  });
+
+  // Calculate duration string
   const calculateDuration = (startIso: string, endIso: string): string => {
     try {
       const start = new Date(startIso).getTime();
@@ -48,9 +56,9 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
     }
   };
 
-  // Helper to compile scan result card stats
-  const compileScanResult = (report: ScanReport): ScanResult => {
-    const scores = report.subScores;
+  // Compile stats
+  const compileScanResult = useCallback((report: ScanReport): ScanResult => {
+    const scores = report.subScores || {};
     let passedCount = 0;
     
     if (scores.exposure?.status === "Pass") passedCount++;
@@ -70,116 +78,204 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
       failedCount: 3 - passedCount,
       securityScore: report.securityScore,
     };
+  }, [initiatedAtParam]);
+
+  // Build cumulative step starts
+  const buildStepStarts = (durations: number[], startOffsetMs = 0) => {
+    const starts = [startOffsetMs];
+    for (let i = 0; i < durations.length - 1; i++) {
+      starts.push(starts[i] + durations[i]);
+    }
+    return starts;
   };
 
-  // Keep ref in sync with state for easy access in intervals
-  useEffect(() => {
-    currentProgressRef.current = progress;
-  }, [progress]);
+  const getInterpolatedProgress = (elapsed: number) => {
+    const { stepStarts, stepDurations } = simStateRef.current;
+    
+    let currentStep = 4;
+    for (let i = 0; i < 5; i++) {
+      if (elapsed < stepStarts[i] + stepDurations[i]) {
+        currentStep = i;
+        break;
+      }
+    }
+
+    const stepStart = stepStarts[currentStep];
+    const stepDuration = stepDurations[currentStep];
+    
+    const stepElapsed = Math.max(0, elapsed - stepStart);
+    const stepProgressFraction = Math.min(1, stepElapsed / stepDuration);
+    
+    const baseProgress = currentStep * 20;
+    const computedProgress = baseProgress + (stepProgressFraction * 20);
+    
+    return {
+      progress: Math.min(100, computedProgress),
+      stepIdx: currentStep
+    };
+  };
+
+  const triggerFastForward = useCallback((report: ScanReport) => {
+    const state = simStateRef.current;
+    if (state.fastForwarding || state.isFinished) return;
+    
+    state.fastForwarding = true;
+    
+    const elapsed = Date.now() - state.startTime;
+    const currentProgressInfo = getInterpolatedProgress(elapsed);
+    const stepIdx = currentProgressInfo.stepIdx;
+    const currentProgress = currentProgressInfo.progress;
+    
+    // If we're already at step 4 and past 99%, just complete
+    if (stepIdx === 4 && currentProgress >= 99) {
+      state.isFinished = true;
+      setProgress(100);
+      setStepStatuses(["completed", "completed", "completed", "completed", "completed"]);
+      setScanResult(compileScanResult(report));
+      setStatus("completed");
+      return;
+    }
+
+    // Rewrite remaining durations to random 3-8s
+    for (let i = stepIdx; i < 5; i++) {
+      state.stepDurations[i] = Math.floor(Math.random() * 5000) + 3000;
+    }
+    
+    // Adjust earlier durations so the current elapsed time aligns exactly with the current progress
+    let priorDurationSum = 0;
+    for (let i = 0; i < stepIdx; i++) {
+      priorDurationSum += state.stepDurations[i];
+    }
+    
+    // Calculate how far into the current step we should be based on the new duration
+    const fraction = Math.max(0, (currentProgress - stepIdx * 20) / 20);
+    const expectedStepElapsed = state.stepDurations[stepIdx] * fraction;
+    
+    const expectedElapsed = priorDurationSum + expectedStepElapsed;
+    const shiftMs = expectedElapsed - elapsed;
+    state.startTime -= shiftMs; // Shift absolute time
+
+    state.stepStarts = buildStepStarts(state.stepDurations);
+    state.totalDuration = state.stepStarts[4] + state.stepDurations[4];
+
+    setScanResult(compileScanResult(report));
+  }, [compileScanResult]);
+
+  const handleFailure = useCallback(() => {
+    simStateRef.current.isFinished = true;
+    setStatus("failed");
+    setStepStatuses((prev) => prev.map((s) => (s === "current" ? "pending" : s)));
+    if (timerIdRef.current) clearInterval(timerIdRef.current);
+    if (pollerIdRef.current) clearInterval(pollerIdRef.current);
+  }, []);
 
   useEffect(() => {
     if (!scanId) return;
-
     let isMounted = true;
 
-    const updateStepStatuses = (prog: number) => {
-      const currentStepIdx = Math.min(4, Math.floor(prog / 20));
-      setStepStatuses((prev) => {
-        const next = [...prev];
-        for (let i = 0; i < 5; i++) {
-          if (i < currentStepIdx) next[i] = "completed";
-          else if (i === currentStepIdx) next[i] = "current";
-          else next[i] = "pending";
-        }
-        return next;
-      });
-    };
+    // Initialize Simulation Logic
+    const initSimulation = () => {
+      setProgress(0);
+      setStatus("running");
+      setScanResult(null);
+      setStepStatuses(["current", "pending", "pending", "pending", "pending"]);
 
-    // Trigger the 5-second fast forward sequence
-    const triggerFastForward = (report: ScanReport) => {
-      if (fastForwardingRef.current || !isMounted) return;
-      fastForwardingRef.current = true;
+      let absoluteStart = initiatedAtParam ? new Date(initiatedAtParam).getTime() : Date.now();
+      if (!Number.isFinite(absoluteStart)) absoluteStart = Date.now();
+      
+      const MIN_MS = 240_000;
+      const MAX_MS = 420_000;
+      const totalDuration = Math.floor(Math.random() * (MAX_MS - MIN_MS + 1)) + MIN_MS;
+      
+      const stepDurations = Array(5).fill(40_000);
+      let extra = totalDuration - 200_000;
+      for (let i = 0; i < 4; i++) {
+        const add = Math.random() * extra;
+        stepDurations[i] += add;
+        extra -= add;
+      }
+      stepDurations[4] += extra;
 
-      // Clear the standard simulation timer
-      if (timerIdRef.current) clearInterval(timerIdRef.current);
+      simStateRef.current = {
+        startTime: absoluteStart,
+        fastForwarding: false,
+        isFinished: false,
+        stepDurations,
+        stepStarts: buildStepStarts(stepDurations),
+        totalDuration,
+      };
 
-      const FAST_FORWARD_DURATION_MS = 5000;
-      const UPDATE_INTERVAL_MS = 100;
-      const totalSteps = FAST_FORWARD_DURATION_MS / UPDATE_INTERVAL_MS;
-      const startProgress = currentProgressRef.current;
-      const increment = (100 - startProgress) / totalSteps;
-
+      // Progress Loop
       timerIdRef.current = setInterval(() => {
         if (!isMounted) return;
+        const state = simStateRef.current;
+        if (state.isFinished) return;
 
-        setProgress((prev) => {
-          const nextVal = prev + increment;
-          if (nextVal >= 100) {
-            if (timerIdRef.current) clearInterval(timerIdRef.current);
-            setStepStatuses(["completed", "completed", "completed", "completed", "completed"]);
-            setScanResult(compileScanResult(report));
-            setIsCompleted(true);
-            return 100;
-          }
-          updateStepStatuses(nextVal);
-          return nextVal;
-        });
-      }, UPDATE_INTERVAL_MS);
-    };
+        const elapsed = Date.now() - state.startTime;
+        const { progress: nextProg, stepIdx } = getInterpolatedProgress(elapsed);
 
-    const startProgressSimulation = () => {
-      let startTime = initiatedAtParam ? new Date(initiatedAtParam).getTime() : Date.now();
-      if (!Number.isFinite(startTime)) startTime = Date.now();
+        const cappedProg = (!state.fastForwarding && nextProg > 95) ? 95 : nextProg;
 
-      timerIdRef.current = setInterval(() => {
-        if (!isMounted || fastForwardingRef.current) return;
-
-        const elapsed = Date.now() - startTime;
-        let computedProgress = Math.min(95, Math.floor((elapsed / SCAN_DURATION_MS) * 100));
-        if (!Number.isFinite(computedProgress) || computedProgress < 0) {
-          computedProgress = 0;
-        }
+        setProgress(cappedProg);
         
-        setProgress((prev) => {
-          const nextVal = Math.min(100, Math.max(prev, computedProgress));
-          updateStepStatuses(nextVal);
-          return nextVal;
+        setStepStatuses((prev) => {
+          const next = [...prev];
+          for (let i = 0; i < 5; i++) {
+            if (i < stepIdx) next[i] = "completed";
+            else if (i === stepIdx) next[i] = "current";
+            else next[i] = "pending";
+          }
+          return next;
         });
-      }, 500);
+
+        if (state.fastForwarding && cappedProg >= 100) {
+          state.isFinished = true;
+          if (timerIdRef.current) clearInterval(timerIdRef.current);
+          setStepStatuses(["completed", "completed", "completed", "completed", "completed"]);
+          setStatus("completed");
+        }
+      }, 200);
     };
 
-    // Main initialization flow
-    const init = async () => {
-      // 1. Start simulation immediately so UI feels responsive
-      startProgressSimulation();
-
-      // 2. Check if already completed on the backend
+    // REST Poller (Fallback)
+    const checkStatus = async () => {
       try {
         const res = await scanService.getScanReport(scanId);
-        if (isMounted && res.isSuccess && res.value && res.value.status === "Completed") {
-          // If already complete, we still fast-forward from 0 to 100 over 5 seconds
-          triggerFastForward(res.value);
-          return;
+        if (isMounted && res.isSuccess && res.value) {
+          if (res.value.status === "Completed") {
+            triggerFastForward(res.value);
+            if (pollerIdRef.current) clearInterval(pollerIdRef.current);
+            return true;
+          } else if (res.value.status === "Failed") {
+            handleFailure();
+            if (pollerIdRef.current) clearInterval(pollerIdRef.current);
+            return true;
+          }
         }
       } catch (err) {
-        console.warn("Failed checking initial scan status, continuing with simulation...", err);
+        console.warn("Poll check failed", err);
       }
+      return false;
+    };
 
-      // 3. Connect to SignalR channel for realtime events
+    const initConnection = async () => {
+      // Start Simulation
+      initSimulation();
+      
+      // Initial API check for quick resolution
+      const isTerminal = await checkStatus();
+      if (isTerminal) return;
+
+      // Start 30s Poller (Safety Net)
+      pollerIdRef.current = setInterval(checkStatus, 30_000);
+
+      // SignalR setup
       const userId = getUserIdFromToken();
-      if (!userId) {
-        console.warn("Cannot subscribe to SignalR: User ID not found in token");
-        return;
-      }
+      if (!userId) return;
 
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const hubUrl = `${apiBaseUrl}/hubs/scans`;
-
       const connection = new signalR.HubConnectionBuilder()
-        .withUrl(hubUrl, {
-          skipNegotiation: true,
-          transport: signalR.HttpTransportType.WebSockets,
-        })
+        .withUrl(`${apiBaseUrl}/hubs/scans`, { skipNegotiation: true, transport: signalR.HttpTransportType.WebSockets })
         .withAutomaticReconnect()
         .build();
 
@@ -187,44 +283,39 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
 
       connection.on("ScanCompleted", async (event: { scanId: string }) => {
         if (event?.scanId === scanId) {
-          try {
-            const reportRes = await scanService.getScanReport(scanId);
-            if (isMounted && reportRes.isSuccess && reportRes.value) {
-              triggerFastForward(reportRes.value);
-            }
-          } catch (err) {
-            console.error("Error fetching completed scan report:", err);
-            // Fallback complete state with fast forward
-            triggerFastForward({ scanId, status: "Completed", securityScore: 0, subScores: {} } as unknown as ScanReport);
-          }
+          checkStatus(); // Fetch full report and fast-forward
         }
+      });
+
+      connection.on("ScanFailed", (event: { scanId: string }) => {
+        if (event?.scanId === scanId) handleFailure();
       });
 
       try {
         await connection.start();
         await connection.invoke("JoinUserGroup", userId);
-        console.log(`Connected to SignalR scan hub. Joined user group: ${userId}`);
       } catch (err) {
-        console.error("SignalR connection failed, waiting for poll or timeout...", err);
+        console.warn("SignalR failed, relying on poller...", err);
       }
     };
 
-    init();
+    initConnection();
 
     return () => {
       isMounted = false;
       if (timerIdRef.current) clearInterval(timerIdRef.current);
+      if (pollerIdRef.current) clearInterval(pollerIdRef.current);
       if (hubConnectionRef.current) {
-        hubConnectionRef.current.stop().catch((e) => console.log("Error stopping connection:", e));
+        hubConnectionRef.current.stop().catch(() => {});
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scanId, initiatedAtParam]);
+  }, [scanId, initiatedAtParam, triggerFastForward, handleFailure]);
 
   return {
     progress,
     stepStatuses,
     scanResult,
-    isCompleted,
+    isCompleted: status === "completed",
+    isFailed: status === "failed",
   };
 }

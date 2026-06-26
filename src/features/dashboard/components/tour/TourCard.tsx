@@ -10,9 +10,10 @@ interface TourCardProps {
     onNext: () => void
     onSkip: () => void
     actualArrow?: ArrowDirection
+    arrowOffset?: { x?: number, y?: number }
 }
 
-export function TourCard({ step, currentIndex, totalSteps, onNext, onSkip, actualArrow }: TourCardProps) {
+export function TourCard({ step, currentIndex, totalSteps, onNext, onSkip, actualArrow, arrowOffset }: TourCardProps) {
     const arrow = actualArrow || step.arrow
 
     return (
@@ -20,34 +21,38 @@ export function TourCard({ step, currentIndex, totalSteps, onNext, onSkip, actua
 
             {/* Arrow — top */}
             {arrow === 'top' && (
-                <div className="hidden md:block absolute -top-5 left-1/2 -translate-x-1/2 w-0 h-0
+                <div className="absolute -top-5 w-0 h-0
                     border-l-[14px] border-l-transparent
                     border-r-[14px] border-r-transparent
-                    border-b-[16px] border-b-primary" />
+                    border-b-[16px] border-b-primary"
+                    style={{ left: arrowOffset?.x !== undefined ? `${arrowOffset.x}px` : '50%', transform: 'translateX(-50%)' }} />
             )}
 
             {/* Arrow — bottom */}
             {arrow === 'bottom' && (
-                <div className="hidden md:block absolute -bottom-5 left-1/2 -translate-x-1/2 w-0 h-0
+                <div className="absolute -bottom-5 w-0 h-0
                     border-l-[14px] border-l-transparent
                     border-r-[14px] border-r-transparent
-                    border-t-[16px] border-t-primary" />
+                    border-t-[16px] border-t-primary"
+                    style={{ left: arrowOffset?.x !== undefined ? `${arrowOffset.x}px` : '50%', transform: 'translateX(-50%)' }} />
             )}
 
             {/* Arrow — left */}
             {arrow === 'left' && (
-                <div className="hidden md:block absolute -left-5 top-1/2 -translate-y-1/2 w-0 h-0
+                <div className="absolute -left-5 w-0 h-0
                     border-t-[14px] border-t-transparent
                     border-b-[14px] border-b-transparent
-                    border-r-[16px] border-r-primary" />
+                    border-r-[16px] border-r-primary"
+                    style={{ top: arrowOffset?.y !== undefined ? `${arrowOffset.y}px` : '50%', transform: 'translateY(-50%)' }} />
             )}
 
             {/* Arrow — right */}
             {arrow === 'right' && (
-                <div className="hidden md:block absolute -right-5 top-1/2 -translate-y-1/2 w-0 h-0
+                <div className="absolute -right-5 w-0 h-0
                     border-t-[14px] border-t-transparent
                     border-b-[14px] border-b-transparent
-                    border-l-[16px] border-l-primary" />
+                    border-l-[16px] border-l-primary"
+                    style={{ top: arrowOffset?.y !== undefined ? `${arrowOffset.y}px` : '50%', transform: 'translateY(-50%)' }} />
             )}
 
             {/* Label */}

@@ -17,7 +17,6 @@ import {
 import ScanResultCardItem from "./ScanResultCardItem";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface ScanCompleteModalProps {
   open: boolean;
@@ -223,12 +222,32 @@ export default function ScanCompleteModal({
                   >
                     Show Result
                   </Button>
-                  <Link
-                    href="/scan"
-                    className="block text-center font-geist font-normal text-[#2B2B2B] hover:underline"
+                  <button
+                    onClick={async () => {
+                      if (!domain) {
+                        router.push("/domain");
+                        return;
+                      }
+                      try {
+                        const { scanService } = await import("@/features/scans/services/scan.service");
+                        const res = await scanService.createScan({
+                          domain,
+                          scanType: "QUICK_SCAN",
+                        });
+                        if (res.isSuccess && res.value?.scanId) {
+                          // Force a hard reload on the new URL to reset all states cleanly
+                          window.location.href = `/scan/progress?scanId=${res.value.scanId}&domain=${encodeURIComponent(domain)}&initiatedAt=${encodeURIComponent(res.value.initiatedAt || new Date().toISOString())}`;
+                        } else {
+                          router.push("/domain");
+                        }
+                      } catch {
+                        router.push("/domain");
+                      }
+                    }}
+                    className="block w-full text-center font-geist font-normal text-[#2B2B2B] hover:underline"
                   >
                     Run another scan
-                  </Link>
+                  </button>
                 </div>
 
                 <div className="mt-16 flex items-center justify-center gap-2 text-neutral-500 text-sm">
