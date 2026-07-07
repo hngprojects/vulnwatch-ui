@@ -44,12 +44,14 @@ const STATUS_COLORS: Record<DomainStatus, string> = {
   Verified: "bg-brand-success text-brand-verified-text",
   Pending: "bg-brand-pending-bg text-brand-pending-text",
   Failed: "bg-brand-failed-bg text-brand-failed-text",
+  Revoked: "bg-slate-100 text-slate-500",
 };
 
 const STATUS_DOTS: Record<DomainStatus, string> = {
   Verified: "bg-brand-verified-text",
   Pending: "bg-brand-pending-text",
   Failed: "bg-brand-failed-text",
+  Revoked: "bg-slate-400",
 };
 
 function scoreLabel(score: number | null): string {

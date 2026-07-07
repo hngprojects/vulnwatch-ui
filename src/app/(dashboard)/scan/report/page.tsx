@@ -70,7 +70,7 @@ function ScanReportContent() {
     try {
       setIsRescanning(true);
       const response = await scanService.createScan({
-        domain: report.domainName,
+        domainId: report.domainId,
         scanType: "QUICK_SCAN",
       });
       if (response.isSuccess && response.value) {

@@ -5,6 +5,7 @@ import { scanService, ScanReport } from "../../services/scan.service";
 
 export interface ScanResult {
   scanId: string;
+  domainId: string;
   duration: string;
   passedCount: number;
   failedCount: number;
@@ -65,20 +66,15 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
     if (scores.ssl?.status === "Pass") passedCount++;
     if (scores.dns?.status === "Pass") passedCount++;
     
-    const durationStr = report.completedAt && report.initiatedAt
-      ? calculateDuration(report.initiatedAt, report.completedAt)
-      : initiatedAtParam
-        ? calculateDuration(initiatedAtParam, new Date().toISOString())
-        : "1m 15s";
-
     return {
       scanId: report.scanId,
-      duration: durationStr,
-      passedCount,
+      domainId: report.domainId,
+      duration: calculateDuration(report.initiatedAt || "", report.completedAt || ""),
+      passedCount: passedCount,
       failedCount: 3 - passedCount,
       securityScore: report.securityScore,
     };
-  }, [initiatedAtParam]);
+  }, []);
 
   // Build cumulative step starts
   const buildStepStarts = (durations: number[], startOffsetMs = 0) => {

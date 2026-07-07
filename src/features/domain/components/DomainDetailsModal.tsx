@@ -58,9 +58,18 @@ const STATUS_CONFIG: Record<DomainStatus, {
     dot: "bg-[#EF4444]",
     badgeLabel: "Verification Failed",
     title: "We couldn't verify this domain",
-    iconBg: "bg-[#FEF2F2]",
+    iconBg: "bg-[#FFF0F0]",
     iconColor: "text-[#EF4444]",
     statusRowValue: "Failed",
+  },
+  Revoked: {
+    badge: "bg-slate-100 text-slate-700 font-semibold rounded-[20px]",
+    dot: "bg-slate-500",
+    badgeLabel: "Revoked",
+    title: "Domain Revoked",
+    iconBg: "bg-slate-50",
+    iconColor: "text-slate-500",
+    statusRowValue: "Revoked",
   },
 };
 
@@ -256,14 +265,16 @@ export default function DomainDetailsModal({ domain, open, onOpenChange, onDelet
               typeof window !== "undefined"
                 ? (localStorage.getItem(`vulnwatch_token_${liveDomain.id}`) ?? "")
                 : "";
-            const token = liveDomain.verificationToken || liveDomain.instructions?.value || storedToken || (checking ? "Loading..." : "");
+            const token = liveDomain.status === "Revoked" 
+              ? "" 
+              : (liveDomain.verificationToken || liveDomain.instructions?.value || storedToken || (checking ? "Loading..." : ""));
             const rawHost = liveDomain.txtRecord || liveDomain.instructions?.txtRecord || "_vulnwatch-verify";
             const domainName = liveDomain.domain || "";
             const host = (domainName && rawHost.endsWith(`.${domainName}`))
               ? rawHost.slice(0, -(domainName.length + 1))
               : rawHost;
 
-            const showVerificationDetails = liveDomain.status !== "Verified";
+            const showVerificationDetails = liveDomain.status !== "Verified" && liveDomain.status !== "Revoked";
 
             const details = [
               { label: "Domain", value: liveDomain.domain },

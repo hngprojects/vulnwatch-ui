@@ -19,6 +19,7 @@ const waitlistSchema = z.object({
     .array(z.string())
     .min(1, { message: "Please select at least one feature." }),
   additionalInfo: z.string().optional(),
+  referralCode: z.string().optional(),
 });
 
 type WaitlistFormValues = z.infer<typeof waitlistSchema>;
@@ -46,8 +47,23 @@ export function WaitlistForm() {
       company: "",
       features: [],
       additionalInfo: "",
+      referralCode: "",
     },
   });
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlRef = params.get("ref") || params.get("referralCode");
+      const storedRef = sessionStorage.getItem("vulnwatch_referral");
+      
+      const ref = urlRef || storedRef;
+      if (ref) {
+        form.setValue("referralCode", ref);
+        if (urlRef) sessionStorage.setItem("vulnwatch_referral", urlRef);
+      }
+    }
+  }, [form]);
 
   const onSubmit = async (data: WaitlistFormValues) => {
     try {
@@ -59,6 +75,7 @@ export function WaitlistForm() {
         email: data.workEmail,
         companyName: data.company || undefined,
         comments: combinedComments,
+        referralCode: data.referralCode || undefined,
       });
 
       if (response.isSuccess && response.value) {
@@ -133,6 +150,27 @@ export function WaitlistForm() {
                 </FormItem>
               )}
             />
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-6">
+            <FormField
+              control={form.control}
+              name="referralCode"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="text-brand-dark font-semibold text-base">
+                    Referral Code <span className="text-brand-gray font-normal text-sm">(Optional)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="mt-2">
+                      <Input placeholder="Enter code or leave blank" className="h-14 rounded-xl border-gray-200 text-base placeholder:text-brand-gray px-4" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex-1 hidden md:block"></div>
           </div>
 
           <FormField
