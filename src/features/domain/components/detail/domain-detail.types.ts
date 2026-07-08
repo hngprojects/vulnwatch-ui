@@ -14,7 +14,7 @@ export type RiskLevel = "safe" | "moderate" | "critical" | "unknown";
 
 export interface DomainDetailData {
   domainName: string;
-  domainStatus: "Verified" | "Pending" | "Failed";
+  domainStatus: "Verified" | "Pending" | "Failed" | "Revoked";
   monitoringActive: boolean;
   securityScore: number;
   riskLevel: RiskLevel;

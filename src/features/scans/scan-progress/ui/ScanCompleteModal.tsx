@@ -22,6 +22,7 @@ interface ScanCompleteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   domain?: string;
+  domainId?: string;
   scanId?: string;
   duration?: string;
   passed?: number;
@@ -32,6 +33,7 @@ export default function ScanCompleteModal({
   open,
   onOpenChange,
   domain,
+  domainId,
   scanId,
   duration,
   passed,
@@ -224,14 +226,14 @@ export default function ScanCompleteModal({
                   </Button>
                   <button
                     onClick={async () => {
-                      if (!domain) {
+                      if (!domain || !domainId) {
                         router.push("/domain");
                         return;
                       }
                       try {
                         const { scanService } = await import("@/features/scans/services/scan.service");
                         const res = await scanService.createScan({
-                          domain,
+                          domainId,
                           scanType: "QUICK_SCAN",
                         });
                         if (res.isSuccess && res.value?.scanId) {

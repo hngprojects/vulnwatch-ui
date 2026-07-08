@@ -16,10 +16,8 @@ const COVERAGE_MAP: Record<string, "Quick" | "Full"> = {
 };
 
 export interface CreateScanPayload {
-  domain: string;
+  domainId: string;
   scanType: "QUICK_SCAN" | "FULL_SCAN";
-  // emailNotification is intentionally excluded until the backend adds it to POST /api/Scans
-  // TODO: add notifyOnComplete: boolean when backend supports it
 }
 
 export type ScanTargetType = "Domain" | "Repository";
@@ -332,17 +330,17 @@ export const scanService = {
   async createScan(
     payload: CreateScanPayload,
   ): Promise<ApiResponse<ScanResponse>> {
-    const cleanedDomain = cleanDomain(payload.domain);
-    if (!cleanedDomain) {
-      throw new Error("Invalid domain name");
+    if (!payload.domainId) {
+      throw new Error("Invalid domain ID");
     }
 
     const response = await privateApi.post<ApiResponse<ScanResponse>>(
       "/api/Scans",
       {
-        domain: cleanedDomain,
+        target: payload.domainId,
+        targetType: "Domain",
         coverage: COVERAGE_MAP[payload.scanType],
-        // notifyOnComplete: payload.emailNotification, // ← uncomment when backend adds this field
+        surfaceTypes: "Dns, Ssl, Http",
       },
       {
         headers: {

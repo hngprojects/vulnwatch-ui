@@ -11,6 +11,7 @@ export interface JoinWaitlistRequest {
   email: string;
   companyName?: string;
   comments?: string;
+  referralCode?: string;
 }
 
 export interface WaitlistResponse {
@@ -28,6 +29,10 @@ export interface WaitlistStatusResponse {
   status: string;
   emailConfirmed: boolean;
   joinedAt: string;
+}
+
+export interface RequestWaitlistCancellationRequest {
+  email: string;
 }
 
 export interface CancelWaitlistRequest {
@@ -126,6 +131,14 @@ export const waitlistService = {
 
   async cancel(data: CancelWaitlistRequest): Promise<ApiResponse<{ message: string }>> {
     return fetchWithTimeout<{ message: string }>(`${API_BASE}/api/waitlist/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async requestCancel(data: RequestWaitlistCancellationRequest): Promise<ApiResponse<{ message: string }>> {
+    return fetchWithTimeout<{ message: string }>(`${API_BASE}/api/waitlist/cancel/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

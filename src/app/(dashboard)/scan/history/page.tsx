@@ -200,14 +200,14 @@ function ScanHistoryContent() {
   }, [domainId]);
 
   const handleStartScan = async () => {
-    if (!domainName) return;
+    if (!domainName || !domainId) return;
     setStartingScan(true);
     const toastId = toast.loading("Initiating safe non-intrusive scan...", {
       description: `Target: ${domainName}`,
     });
     try {
       const response = await scanService.createScan({
-        domain: domainName,
+        domainId: domainId,
         scanType: "QUICK_SCAN",
       });
 
