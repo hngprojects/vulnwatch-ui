@@ -6,6 +6,7 @@ import { waitlistService } from "../services/waitlist.services";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ROUTES } from "@/constants/routes";
 
 export function VerifyWaitlistPage() {
   const searchParams = useSearchParams();
@@ -75,7 +76,7 @@ export function VerifyWaitlistPage() {
             <p className="text-brand-gray">{errorMessage}</p>
             <div className="mt-4 w-full">
               <Button asChild className="w-full h-14 text-base rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white">
-                <Link href="/">Back to Home</Link>
+                <Link href={`${ROUTES.WAITLIST}#waitlist-form`}>Back to Waitlist</Link>
               </Button>
             </div>
           </div>

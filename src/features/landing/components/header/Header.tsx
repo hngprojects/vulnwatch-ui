@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
@@ -11,6 +11,16 @@ import { ROUTES } from "@/constants/routes";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref") || params.get("referralCode");
+      if (ref) {
+        sessionStorage.setItem("vulnwatch_referral", ref);
+      }
+    }
+  }, []);
 
   return (
     <>

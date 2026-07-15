@@ -11,6 +11,7 @@ export interface JoinWaitlistRequest {
   email: string;
   companyName?: string;
   comments?: string;
+  referralCode?: string;
 }
 
 export interface WaitlistResponse {
@@ -24,8 +25,14 @@ export interface WaitlistResponse {
 export interface WaitlistStatusResponse {
   email: string;
   position: number;
+  totalOnWaitlist: number;
   status: string;
-  createdAt: string;
+  emailConfirmed: boolean;
+  joinedAt: string;
+}
+
+export interface RequestWaitlistCancellationRequest {
+  email: string;
 }
 
 export interface CancelWaitlistRequest {
@@ -88,7 +95,10 @@ async function fetchWithTimeout<T>(
     return {
       isSuccess: false,
       value: null,
-      error: { code: "NETWORK_ERROR", message: err.message || "A network error occurred." },
+      error: {
+        code: "NETWORK_ERROR",
+        message: "We couldn't reach the server. Please check your connection and try again.",
+      },
     };
   }
 }
@@ -124,6 +134,14 @@ export const waitlistService = {
 
   async cancel(data: CancelWaitlistRequest): Promise<ApiResponse<{ message: string }>> {
     return fetchWithTimeout<{ message: string }>(`${API_BASE}/api/waitlist/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async requestCancel(data: RequestWaitlistCancellationRequest): Promise<ApiResponse<{ message: string }>> {
+    return fetchWithTimeout<{ message: string }>(`${API_BASE}/api/waitlist/cancel/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

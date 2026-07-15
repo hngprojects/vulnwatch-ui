@@ -1,5 +1,5 @@
 export type VerificationMethod = "DNS_TXT" | "FILE_UPLOAD" | "EMAIL";
-export type DomainStatus = "Verified" | "Pending" | "Failed";
+export type DomainStatus = "Verified" | "Pending" | "Failed" | "Revoked";
 
 export interface Domain {
   id: string;

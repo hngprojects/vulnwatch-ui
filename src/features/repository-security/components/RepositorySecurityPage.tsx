@@ -24,10 +24,17 @@ export function RepositorySecurityPage() {
   }, []);
 
   const handleConnect = () => {
+    const url = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
+    if (!url) {
+      toast.error("GitHub App is not configured yet.", {
+        description: "Set NEXT_PUBLIC_GITHUB_APP_INSTALL_URL to enable connecting.",
+      });
+      return;
+    }
     setDialogOpen(false);
-    toast.success("GitHub connected successfully!", {
-      description: "Your repositories have been loaded.",
-    });
+    // GitHub redirects back to /repositories/github/callback with
+    // installation_id & setup_action once the App is installed.
+    window.location.href = url;
   };
 
   const filtered = repositories.filter((repo) => {

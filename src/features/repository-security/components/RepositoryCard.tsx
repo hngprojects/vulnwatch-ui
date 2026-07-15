@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { GitBranch, Lock, Globe, Calendar, PlayCircle } from "lucide-react";
+import { GitBranch, Lock, Globe, Calendar, PlayCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { scanService } from "@/features/scans/services/scan.service";
 import type { Repository, SeverityLevel } from "../types/repository.types";
 
 interface Props {
@@ -73,6 +76,28 @@ function SeverityBadge({
 }
 
 export function RepositoryCard({ repository }: Props) {
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScan = async () => {
+    setIsScanning(true);
+    try {
+      const res = await scanService.createTargetScan({
+        target: repository.id,
+        targetType: "Repository",
+        surfaceTypes: "ssl",
+      });
+      if (res.isSuccess && res.value) {
+        toast.success(res.value.message || "Scan queued.");
+      } else {
+        toast.error(res.error?.message ?? "Failed to start scan.");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to start scan.");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-brand-light-gray bg-white p-5 transition-shadow hover:shadow-sm">
       {/* Header */}
@@ -134,9 +159,15 @@ export function RepositoryCard({ repository }: Props) {
             <Button
               variant="outline"
               className="border-brand-border text-brand-gray hover:bg-brand-medium-gray"
+              onClick={handleScan}
+              disabled={isScanning}
             >
-              <PlayCircle className="mr-1.5 h-4 w-4" />
-              Rescan
+              {isScanning ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="mr-1.5 h-4 w-4" />
+              )}
+              {isScanning ? "Starting..." : "Rescan"}
             </Button>
           </div>
         </>
@@ -145,9 +176,17 @@ export function RepositoryCard({ repository }: Props) {
           <div className="rounded-lg border border-brand-light-gray bg-brand-medium-gray p-4 text-center">
             <p className="text-sm text-brand-gray">No scan data available</p>
           </div>
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary-hover">
-            <PlayCircle className="mr-2 h-4 w-4" />
-            Scan Repository
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary-hover"
+            onClick={handleScan}
+            disabled={isScanning}
+          >
+            {isScanning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PlayCircle className="mr-2 h-4 w-4" />
+            )}
+            {isScanning ? "Starting..." : "Scan Repository"}
           </Button>
         </div>
       )}

@@ -24,18 +24,14 @@ export default function RepositoryDetailPage() {
     if (!repoId) return;
 
     let active = true;
-    
+
     const loadData = async () => {
       try {
-        const [repo, vulns, trends] = await Promise.all([
-          repositoryService.getRepository(repoId),
-          repositoryService.getVulnerabilities(repoId),
-          repositoryService.getTrendData(repoId),
-        ]);
+        const detail = await repositoryService.getRepositoryDetail(repoId);
         if (active) {
-          setRepository(repo);
-          setVulnerabilities(vulns);
-          setTrendData(trends);
+          setRepository(detail.repository);
+          setVulnerabilities(detail.vulnerabilities);
+          setTrendData(detail.trendData);
         }
       } catch (err) {
         console.error("Failed to load repository details:", err);

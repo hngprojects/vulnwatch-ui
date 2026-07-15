@@ -88,6 +88,7 @@ export default function ScanProgress({ scanId }: ScanProgressProps) {
         open={showModal}
         onOpenChange={() => {}} // Modal is kept open until user interacts
         domain={domain}
+        domainId={scanResult?.domainId}
         scanId={activeScanId || undefined}
         duration={scanResult?.duration}
         passed={scanResult?.passedCount}

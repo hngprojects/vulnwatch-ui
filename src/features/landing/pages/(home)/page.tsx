@@ -24,7 +24,7 @@ export default function Home() {
       <Features />
       <HowItWorks />
       <WhyChoose />
-      <PricingSection />
+      {/* <PricingSection /> */}
       <Testimonials />
       <FAQs />
       <TrustTransparency />

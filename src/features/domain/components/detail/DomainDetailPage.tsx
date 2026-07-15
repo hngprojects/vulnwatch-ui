@@ -62,7 +62,7 @@ export function DomainDetailPage({ data, domainId }: DomainDetailPageProps) {
     setIsLaunching(true);
     try {
       const res = await scanService.createScan({
-        domain: data.domainName,
+        domainId: domainId,
         scanType: scanType === "deep" ? "FULL_SCAN" : "QUICK_SCAN",
       });
 

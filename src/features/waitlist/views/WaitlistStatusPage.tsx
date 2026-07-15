@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,31 +11,37 @@ import { waitlistService, WaitlistStatusResponse } from "../services/waitlist.se
 import { Loader2, Search } from "lucide-react";
 
 const emailSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
+  email: z.string().trim().email({ message: "Please enter a valid email address." }),
 });
 
 type EmailFormValues = z.infer<typeof emailSchema>;
+
+const STATUS_STORAGE_KEY = "vulnwatch_waitlist_status";
 
 export function WaitlistStatusPage() {
   const [statusData, setStatusData] = useState<WaitlistStatusResponse | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const didInit = useRef(false);
 
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: "" },
   });
 
-  const onCheckStatus = async (data: EmailFormValues) => {
+  const checkStatus = async (email: string) => {
     setIsChecking(true);
     setErrorMsg("");
     setSuccessMsg("");
     setStatusData(null);
     try {
-      const response = await waitlistService.status(data.email);
+      const response = await waitlistService.status(email);
       if (response.isSuccess && response.value) {
         setStatusData(response.value);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(response.value));
+        }
       } else {
         setErrorMsg(response.error?.message || "Email not found on waitlist.");
       }
@@ -45,6 +51,39 @@ export function WaitlistStatusPage() {
       setIsChecking(false);
     }
   };
+
+  const onCheckStatus = (data: EmailFormValues) => checkStatus(data.email);
+
+  // On mount: prefer an email passed from registration (?email=) and auto-check;
+  // otherwise restore the last looked-up status so a refresh doesn't wipe it.
+  useEffect(() => {
+    if (typeof window === "undefined" || didInit.current) return;
+    didInit.current = true;
+
+    const emailParam = new URLSearchParams(window.location.search).get("email");
+    const saved = localStorage.getItem(STATUS_STORAGE_KEY);
+
+    const t = window.setTimeout(() => {
+      // An email handed off from registration takes priority — fetch fresh.
+      if (emailParam) {
+        form.setValue("email", emailParam);
+        void checkStatus(emailParam);
+        return;
+      }
+      // Otherwise restore the last look-up so a refresh doesn't wipe it.
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as WaitlistStatusResponse;
+          setStatusData(parsed);
+          if (parsed.email) form.setValue("email", parsed.email);
+        } catch {
+          localStorage.removeItem(STATUS_STORAGE_KEY);
+        }
+      }
+    }, 0);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center p-6 bg-brand-bg-light">
@@ -98,14 +137,29 @@ export function WaitlistStatusPage() {
             <div className="mb-4">
               <span className="text-sm font-semibold text-brand-gray uppercase tracking-wider">Your Position</span>
               <div className="text-5xl font-bold text-brand-dark my-2">#{statusData.position}</div>
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-                Status: {statusData.status}
+              
+              <div className="flex flex-wrap gap-2 justify-center mt-3">
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                  Status: {statusData.status}
+                </div>
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  statusData.emailConfirmed
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}>
+                  Email: {statusData.emailConfirmed ? "Verified" : "Unverified"}
+                </div>
               </div>
             </div>
             
-            <p className="text-sm text-brand-gray">
-              Registered on: {new Date(statusData.createdAt).toLocaleDateString()}
-            </p>
+            <div className="flex flex-col gap-1.5 mt-2 text-sm text-brand-gray">
+              <p>
+                Total on Waitlist: <span className="font-semibold text-brand-dark">{statusData.totalOnWaitlist}</span>
+              </p>
+              <p>
+                Registered on: {new Date(statusData.joinedAt).toLocaleDateString()}
+              </p>
+            </div>
           </div>
         )}
       </div>

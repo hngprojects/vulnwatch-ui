@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   GitBranch,
@@ -14,7 +15,9 @@ import {
   Shield,
   Eye,
   Bell,
+  Loader2,
 } from "lucide-react";
+import { scanService } from "@/features/scans/services/scan.service";
 import {
   LineChart,
   Line,
@@ -98,6 +101,27 @@ export function RepositoryDetail({ repository, vulnerabilities, trendData }: Pro
   const [isMonitored, setIsMonitored] = useState(repository.isMonitored);
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [slackAlerts, setSlackAlerts] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleRunScan = async () => {
+    setIsScanning(true);
+    try {
+      const res = await scanService.createTargetScan({
+        target: repository.id,
+        targetType: "Repository",
+        surfaceTypes: "ssl",
+      });
+      if (res.isSuccess && res.value) {
+        toast.success(res.value.message || "Scan queued.");
+      } else {
+        toast.error(res.error?.message ?? "Failed to start scan.");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to start scan.");
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -150,9 +174,15 @@ export function RepositoryDetail({ repository, vulnerabilities, trendData }: Pro
           <Button
             variant="outline"
             className="border-brand-border text-brand-gray hover:bg-brand-medium-gray"
+            onClick={handleRunScan}
+            disabled={isScanning}
           >
-            <PlayCircle className="mr-2 h-4 w-4" />
-            Run Scan
+            {isScanning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PlayCircle className="mr-2 h-4 w-4" />
+            )}
+            {isScanning ? "Starting..." : "Run Scan"}
           </Button>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 
 interface DomainDetailHeaderProps {
   domainName: string;
-  domainStatus: "Verified" | "Pending" | "Failed";
+  domainStatus: "Verified" | "Pending" | "Failed" | "Revoked";
   monitoringActive: boolean;
   onMonitoringChange: (active: boolean) => void;
   onRunScan: () => void;

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight } from "lucide-react";
 import { NAV_LINKS } from "../../constants/nav-links";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
@@ -125,32 +124,22 @@ export function MobileMenu({ isOpen, onClose, toggleButtonId }: MobileMenuProps)
           })}
         </ul>
 
-        <div className="mt-6 border-t border-gray-100" />
-
-        <div className="mt-6 flex flex-col gap-3">
-          <Link
-            href={ROUTES.LOGIN}
-            onClick={onClose}
-            className="border-primary text-primary flex h-12 w-full items-center 
-            justify-center rounded-xl border-2 bg-white text-base font-medium 
-            transition-all duration-200 hover:bg-primary hover:text-white"
-          >
-            Log in
-          </Link>
-          <Link
-            href={ROUTES.REGISTER}
-            onClick={onClose}
-            className="bg-primary flex h-12 w-full items-center justify-center 
-            gap-1.5 rounded-xl text-base font-medium text-white transition-opacity duration-300 
-            hover:opacity-90"
-          >
-            Start Free Trial
-            <ArrowRight
-              className="h-2.75 w-3.5 shrink-0 stroke-white"
-              strokeWidth={1.4}
-            />
-          </Link>
-        </div>
+        {pathname !== ROUTES.HOME && pathname !== ROUTES.WAITLIST && (
+          <>
+            <div className="mt-6 border-t border-gray-100" />
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                href={`${ROUTES.WAITLIST}#waitlist-form`}
+                onClick={onClose}
+                className="border-primary text-primary flex h-12 w-full items-center
+                justify-center rounded-xl border-2 bg-white text-base font-medium
+                transition-all duration-200 hover:bg-primary hover:text-white"
+              >
+                Join Waitlist
+              </Link>
+            </div>
+          </>
+        )}
       </nav>
     </>
   );
