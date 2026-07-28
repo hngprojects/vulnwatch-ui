@@ -151,7 +151,7 @@ export function WaitlistForm() {
         <CheckCircle2 className="mb-4 h-16 w-16 text-secondary" />
         <h3 className="mb-2 text-2xl font-semibold text-brand-dark">Almost there!</h3>
         <p className="text-brand-gray">
-          Thank you for joining the waitlist. We&apos;ve sent a verification link to your email address. Please click the link to confirm your email and secure your spot.
+          We&apos;ve sent a message to your email address. Please check your inbox for further details.
         </p>
 
         <Link
