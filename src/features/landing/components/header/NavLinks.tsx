@@ -20,8 +20,8 @@ export function NavLinks() {
                 href={href}
                 className={cn(
                   "font-geist text-base leading-6 font-normal transition-all duration-200",
-                  "cursor-pointer hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  isActive ? "text-primary" : "text-[#45625E]"
+                  "cursor-pointer px-4 py-2 rounded-full hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  isActive ? "text-primary bg-primary/5" : "text-[#45625E]"
                 )}
               >
                 {label}

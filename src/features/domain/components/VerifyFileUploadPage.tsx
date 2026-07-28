@@ -735,11 +735,26 @@ export default function VerifyFileUploadPage({ domainId }: { domainId: string })
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
-    domainService
-      .getDomain(domainId)
-      .then(setDomain)
-      .finally(() => setLoadingDomain(false));
-  }, [domainId]);
+    async function load() {
+      try {
+        const myDomains = await domainService.getDomains();
+        const ownsDomain = myDomains.data.some(d => d.id === domainId);
+        if (!ownsDomain) {
+          toast.error("Unauthorized to access this domain");
+          router.push("/domain");
+          return;
+        }
+        const dom = await domainService.getDomain(domainId);
+        setDomain(dom);
+      } catch (err) {
+        toast.error(extractApiError(err));
+        router.push("/domain");
+      } finally {
+        setLoadingDomain(false);
+      }
+    }
+    load();
+  }, [domainId, router]);
 
   const domainName = domain?.domain ?? "yourdomain.com";
   const tokenShort = tokenFromUrl.slice(0, 8) || "verify";

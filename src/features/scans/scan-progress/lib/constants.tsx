@@ -14,7 +14,7 @@ export const SCAN_PROGRESS: ProgressItem[] = [
   },
   {
     title: "Analyzing SSL....",
-    description: "Validating certificate and confgiguration",
+    description: "Validating certificate and configuration",
     status: "pending",
     icon: (
       <div className="bg-[#1FC16B1A] p-2.5 rounded-full">

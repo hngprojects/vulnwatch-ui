@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { HERO_ARIA } from "../../constants/hero-content";
 import { ROUTES } from "@/constants/routes";
 
 export function HeroScanForm() {

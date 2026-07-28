@@ -62,19 +62,23 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
     const scores = report.subScores || {};
     let passedCount = 0;
     
-    if (scores.exposure?.status === "Pass") passedCount++;
-    if (scores.ssl?.status === "Pass") passedCount++;
-    if (scores.dns?.status === "Pass") passedCount++;
+    if (report.findingGroups && typeof report.findingGroups.passCount === 'number') {
+      passedCount = report.findingGroups.passCount;
+    } else {
+      if ((scores.exposure?.score ?? 0) >= 80) passedCount++;
+      if ((scores.ssl?.score ?? 0) >= 80) passedCount++;
+      if ((scores.dns?.score ?? 0) >= 80) passedCount++;
+    }
     
     return {
       scanId: report.scanId,
       domainId: report.domainId,
-      duration: calculateDuration(report.initiatedAt || "", report.completedAt || ""),
+      duration: calculateDuration(initiatedAtParam || report.initiatedAt || "", new Date().toISOString()),
       passedCount: passedCount,
       failedCount: 3 - passedCount,
       securityScore: report.securityScore,
     };
-  }, []);
+  }, [initiatedAtParam]);
 
   // Build cumulative step starts
   const buildStepStarts = (durations: number[], startOffsetMs = 0) => {

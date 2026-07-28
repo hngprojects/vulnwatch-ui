@@ -39,11 +39,27 @@ export default function VerifyEmailWaitingPage({
   const [countdown, setCountdown] = useState(LINK_EXPIRY_SECONDS);
 
   useEffect(() => {
-    domainService
-      .getDomain(domainId)
-      .then(setDomain)
-      .finally(() => setLoading(false));
-  }, [domainId]);
+    async function load() {
+      try {
+        const myDomains = await domainService.getDomains();
+        const ownsDomain = myDomains.data.some(d => d.id === domainId);
+        if (!ownsDomain) {
+          toast.error("Unauthorized to access this domain");
+          router.push("/domain");
+          return;
+        }
+        const dom = await domainService.getDomain(domainId);
+        setDomain(dom);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to load domain";
+        toast.error(msg);
+        router.push("/domain");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [domainId, router]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {

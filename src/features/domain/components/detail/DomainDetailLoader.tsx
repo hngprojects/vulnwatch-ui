@@ -65,7 +65,14 @@ export function DomainDetailLoader() {
       setError(null);
 
       try {
-        // 1. Fetch base domain + monitoring overview + settings in parallel
+        // 1. Verify ownership first to prevent IDOR
+        const myDomains = await domainService.getDomains();
+        const ownsDomain = myDomains.data.some(d => d.id === domainId);
+        if (!ownsDomain) {
+          throw new Error("Unauthorized to access this domain.");
+        }
+
+        // 2. Fetch base domain + monitoring overview + settings in parallel
         const [baseDomain, domainRes, settingsRes] = await Promise.all([
           domainService.getDomain(domainId),
           privateApi.get<MonitoringDomainResponse>(
