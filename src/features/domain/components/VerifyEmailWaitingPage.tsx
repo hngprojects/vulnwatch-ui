@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CircleAlert, Loader2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { domainService } from "../services/domain.service";
-import type { Domain } from "../types/domain.types";
+import { useDomainOwnershipGuard } from "../hooks/useDomainOwnershipGuard";
 import DomainVerificationStepper from "./DomainVerificationStepper";
 
 const LINK_EXPIRY_SECONDS = 5 * 60;
@@ -34,32 +33,18 @@ export default function VerifyEmailWaitingPage({
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const emailParam = searchParams.get("email");
-  const [domain, setDomain] = useState<Domain | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { domain, loading, authorized, error } = useDomainOwnershipGuard(domainId);
   const [countdown, setCountdown] = useState(LINK_EXPIRY_SECONDS);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const myDomains = await domainService.getDomains();
-        const ownsDomain = myDomains.data.some(d => d.id === domainId);
-        if (!ownsDomain) {
-          toast.error("Unauthorized to access this domain");
-          router.push("/domain");
-          return;
-        }
-        const dom = await domainService.getDomain(domainId);
-        setDomain(dom);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to load domain";
-        toast.error(msg);
-        router.push("/domain");
-      } finally {
-        setLoading(false);
-      }
+    if (authorized === false) {
+      toast.error("Unauthorized to access this domain");
+      router.push("/domain");
+    } else if (error) {
+      toast.error(error);
+      router.push("/domain");
     }
-    load();
-  }, [domainId, router]);
+  }, [authorized, error, router]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {

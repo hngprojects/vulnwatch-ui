@@ -70,10 +70,13 @@ export function useScanProgress(scanId?: string, initiatedAtParam?: string) {
       if ((scores.dns?.score ?? 0) >= 80) passedCount++;
     }
     
+    const isValidDate = (d: string | undefined | null) => d && !isNaN(Date.parse(d));
+    const startIso = isValidDate(initiatedAtParam) ? initiatedAtParam! : (isValidDate(report.initiatedAt) ? report.initiatedAt! : "");
+
     return {
       scanId: report.scanId,
       domainId: report.domainId,
-      duration: calculateDuration(initiatedAtParam || report.initiatedAt || "", new Date().toISOString()),
+      duration: calculateDuration(startIso, new Date().toISOString()),
       passedCount: passedCount,
       failedCount: 3 - passedCount,
       securityScore: report.securityScore,

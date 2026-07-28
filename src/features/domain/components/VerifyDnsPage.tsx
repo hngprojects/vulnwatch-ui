@@ -12,28 +12,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { domainService } from "../services/domain.service";
-import type { Domain } from "../types/domain.types";
-
-function extractApiError(err: unknown): string {
-  if (err && typeof err === "object" && "response" in err) {
-    const res = (err as { response?: { data?: unknown } }).response;
-    const data = res?.data;
-    if (data && typeof data === "object") {
-      if ("errors" in data) {
-        const errors = (data as { errors: Record<string, string[]> }).errors;
-        const messages = Object.values(errors).flat();
-        if (messages.length) return messages[0];
-      }
-      if ("error" in data) {
-        const apiErr = (data as { error?: { message?: string } }).error;
-        if (apiErr?.message) return apiErr.message;
-      }
-      if ("title" in data) return (data as { title: string }).title;
-    }
-  }
-  if (err instanceof Error) return err.message;
-  return "Something went wrong. Please try again.";
-}
+import { useDomainOwnershipGuard, extractApiError } from "../hooks/useDomainOwnershipGuard";
 
 const steps = [
   {
@@ -58,32 +37,19 @@ export default function VerifyDnsPage({ domainId }: { domainId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get("token") ?? "";
-  const [domain, setDomain] = useState<Domain | null>(null);
-  const [loadingDomain, setLoadingDomain] = useState(true);
+  const { domain, loading: loadingDomain, authorized, error } = useDomainOwnershipGuard(domainId);
   const [verifying, setVerifying] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const myDomains = await domainService.getDomains();
-        const ownsDomain = myDomains.data.some(d => d.id === domainId);
-        if (!ownsDomain) {
-          toast.error("Unauthorized to access this domain");
-          router.push("/domain");
-          return;
-        }
-        const dom = await domainService.getDomain(domainId);
-        setDomain(dom);
-      } catch (err) {
-        toast.error(extractApiError(err));
-        router.push("/domain");
-      } finally {
-        setLoadingDomain(false);
-      }
+    if (authorized === false) {
+      toast.error("Unauthorized to access this domain");
+      router.push("/domain");
+    } else if (error) {
+      toast.error(error);
+      router.push("/domain");
     }
-    load();
-  }, [domainId, router]);
+  }, [authorized, error, router]);
 
   const copy = (text: string, field: string) => {
     navigator.clipboard.writeText(text).then(() => {
