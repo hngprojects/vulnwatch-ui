@@ -24,10 +24,10 @@ export function RepositorySecurityPage() {
   }, []);
 
   const handleConnect = () => {
-    const url = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
+    const url = process.env.GithubApp__InstallationUrl;
     if (!url) {
       toast.error("GitHub App is not configured yet.", {
-        description: "Set NEXT_PUBLIC_GITHUB_APP_INSTALL_URL to enable connecting.",
+        description: "Set GithubApp__InstallationUrl to enable connecting.",
       });
       return;
     }

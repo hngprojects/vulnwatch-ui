@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  env: {
+    GithubApp__InstallationUrl: process.env.GithubApp__InstallationUrl,
+  },
   experimental: {
     authInterrupts: true,
   },
