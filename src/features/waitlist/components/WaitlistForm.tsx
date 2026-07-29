@@ -35,7 +35,8 @@ const waitlistSchema = z.object({
 type WaitlistFormValues = z.infer<typeof waitlistSchema>;
 
 const featuresList = [
-  "Slack alerts",
+  "Monitoring",
+  "Email / Slack alerts",
   "Microsoft Teams Alerts",
   "GitLab Support",
   "Bitbucket Support",
@@ -44,7 +45,10 @@ const featuresList = [
   "SSO / SAML",
   "Per-repo Severity Policies",
   "PR Comment Bot",
-  "License Compliance"
+  "License Compliance",
+  "Domain Security Scanning",
+  "AI Powered Translation",
+  "Security Score / Remediation Cards"
 ];
 
 const SUBMITTED_STORAGE_KEY = "vulnwatch_waitlist_submitted";
