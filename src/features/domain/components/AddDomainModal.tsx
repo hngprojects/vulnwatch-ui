@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { domainService } from "../services/domain.service";
+import { extractApiError } from "../hooks/useDomainOwnershipGuard";
 
 interface Props {
   open: boolean;
@@ -53,26 +54,7 @@ function sanitizeDomain(input: string): string {
   }
 }
 
-function extractApiError(err: unknown): string {
-  if (err && typeof err === "object" && "response" in err) {
-    const res = (err as { response?: { data?: unknown } }).response;
-    const data = res?.data;
-    if (data && typeof data === "object") {
-      if ("errors" in data) {
-        const errors = (data as { errors: Record<string, string[]> }).errors;
-        const messages = Object.values(errors).flat();
-        if (messages.length) return messages[0];
-      }
-      if ("error" in data) {
-        const apiErr = (data as { error?: { message?: string } }).error;
-        if (apiErr?.message) return apiErr.message;
-      }
-      if ("title" in data) return (data as { title: string }).title;
-    }
-  }
-  if (err instanceof Error) return err.message;
-  return "Something went wrong. Please try again.";
-}
+
 
 export default function AddDomainModal({ open, onOpenChange }: Props) {
   const router = useRouter();

@@ -35,7 +35,8 @@ const waitlistSchema = z.object({
 type WaitlistFormValues = z.infer<typeof waitlistSchema>;
 
 const featuresList = [
-  "Slack alerts",
+  "Monitoring",
+  "Email / Slack alerts",
   "Microsoft Teams Alerts",
   "GitLab Support",
   "Bitbucket Support",
@@ -44,7 +45,10 @@ const featuresList = [
   "SSO / SAML",
   "Per-repo Severity Policies",
   "PR Comment Bot",
-  "License Compliance"
+  "License Compliance",
+  "Domain Security Scanning",
+  "AI Powered Translation",
+  "Security Score / Remediation Cards"
 ];
 
 const SUBMITTED_STORAGE_KEY = "vulnwatch_waitlist_submitted";
@@ -151,7 +155,7 @@ export function WaitlistForm() {
         <CheckCircle2 className="mb-4 h-16 w-16 text-secondary" />
         <h3 className="mb-2 text-2xl font-semibold text-brand-dark">Almost there!</h3>
         <p className="text-brand-gray">
-          Thank you for joining the waitlist. We&apos;ve sent a verification link to your email address. Please click the link to confirm your email and secure your spot.
+          We&apos;ve sent a message to your email address. Please check your inbox for further details.
         </p>
 
         <Link

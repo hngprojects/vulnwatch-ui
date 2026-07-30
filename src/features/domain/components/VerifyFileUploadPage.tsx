@@ -19,29 +19,11 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { domainService } from "../services/domain.service";
-import type { Domain } from "../types/domain.types";
+import { useDomainOwnershipGuard, extractApiError } from "../hooks/useDomainOwnershipGuard";
 
 type Step = 1 | 2 | 3 | 4;
 type Platform = "hostinger" | "cpanel" | "namecheap" | "wordpress" | "shopify" | "vercel";
 type VerifyResult = "success" | "failed" | null;
-
-function extractApiError(err: unknown): string {
-  if (err && typeof err === "object") {
-    const e = err as Record<string, unknown>;
-    if (e.response && typeof e.response === "object") {
-      const resp = e.response as Record<string, unknown>;
-      if (resp.data && typeof resp.data === "object") {
-        const data = resp.data as Record<string, unknown>;
-        if (data.error && typeof data.error === "object") {
-          const apiErr = data.error as { message?: string };
-          if (apiErr.message) return apiErr.message;
-        }
-      }
-    }
-  }
-  if (err instanceof Error) return err.message;
-  return "Verification failed. Please try again.";
-}
 
 const STEP_LABELS = ["Setup", "Upload", "Verify", "Done"];
 
@@ -726,8 +708,7 @@ export default function VerifyFileUploadPage({ domainId }: { domainId: string })
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get("token") ?? "";
 
-  const [domain, setDomain] = useState<Domain | null>(null);
-  const [loadingDomain, setLoadingDomain] = useState(true);
+  const { domain, loading: loadingDomain, authorized, error } = useDomainOwnershipGuard(domainId);
   const [step, setStep] = useState<Step>(1);
   const [platform, setPlatform] = useState<Platform>("hostinger");
   const [verifyResult, setVerifyResult] = useState<VerifyResult>(null);
@@ -735,11 +716,14 @@ export default function VerifyFileUploadPage({ domainId }: { domainId: string })
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
-    domainService
-      .getDomain(domainId)
-      .then(setDomain)
-      .finally(() => setLoadingDomain(false));
-  }, [domainId]);
+    if (authorized === false) {
+      toast.error("Unauthorized to access this domain");
+      router.push("/domain");
+    } else if (error) {
+      toast.error(error);
+      router.push("/domain");
+    }
+  }, [authorized, error, router]);
 
   const domainName = domain?.domain ?? "yourdomain.com";
   const tokenShort = tokenFromUrl.slice(0, 8) || "verify";

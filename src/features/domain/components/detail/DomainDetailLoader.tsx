@@ -6,7 +6,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { privateApi } from "@/lib/axios";
-import { domainService } from "@/features/domain/services/domain.service";
+import { useDomainOwnershipGuard } from "@/features/domain/hooks/useDomainOwnershipGuard";
 import { mapToDomainDetailData } from "./domain-detail.mapper";
 import { DomainDetailPage } from "./DomainDetailPage";
 import type { DomainDetailData } from "./domain-detail.types";
@@ -23,6 +23,8 @@ export function DomainDetailLoader() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  const { domain, loading: loadingDomain, authorized, error: ownershipError } = useDomainOwnershipGuard(domainId);
 
   // Derive if it's a rate limit error
   const isRateLimitError = Boolean(
@@ -58,16 +60,31 @@ export function DomainDetailLoader() {
       });
       return;
     }
+    
+    if (loadingDomain) {
+      return;
+    }
+
     let active = true;
 
     async function load() {
+      if (ownershipError || authorized === false) {
+        queueMicrotask(() => {
+          if (active) {
+            setError(ownershipError || "Unauthorized to access this domain.");
+            setLoading(false);
+          }
+        });
+        return;
+      }
+
+      if (!domain) return;
+
       setLoading(true);
       setError(null);
 
       try {
-        // 1. Fetch base domain + monitoring overview + settings in parallel
-        const [baseDomain, domainRes, settingsRes] = await Promise.all([
-          domainService.getDomain(domainId),
+        const [domainRes, settingsRes] = await Promise.all([
           privateApi.get<MonitoringDomainResponse>(
             `/api/monitoring/domains/${domainId}`,
           ),
@@ -93,7 +110,7 @@ export function DomainDetailLoader() {
         queueMicrotask(() => {
           if (active) {
             setData(
-              mapToDomainDetailData(baseDomain, domainValue, settingsValue),
+              mapToDomainDetailData(domain, domainValue, settingsValue),
             );
           }
         });
@@ -114,7 +131,7 @@ export function DomainDetailLoader() {
     return () => {
       active = false;
     };
-  }, [domainId, retryCount]);
+  }, [domainId, retryCount, loadingDomain, domain, authorized, ownershipError]);
 
   if (loading) {
     return (

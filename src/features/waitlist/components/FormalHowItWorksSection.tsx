@@ -1,6 +1,6 @@
 import React from "react";
 
-export function HowItWorksSection() {
+export function FormalHowItWorksSection() {
   const steps = [
     {
       number: "01",

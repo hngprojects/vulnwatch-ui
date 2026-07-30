@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CircleAlert, Loader2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { domainService } from "../services/domain.service";
-import type { Domain } from "../types/domain.types";
+import { useDomainOwnershipGuard } from "../hooks/useDomainOwnershipGuard";
 import DomainVerificationStepper from "./DomainVerificationStepper";
 
 const LINK_EXPIRY_SECONDS = 5 * 60;
@@ -34,16 +33,18 @@ export default function VerifyEmailWaitingPage({
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const emailParam = searchParams.get("email");
-  const [domain, setDomain] = useState<Domain | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { domain, loading, authorized, error } = useDomainOwnershipGuard(domainId);
   const [countdown, setCountdown] = useState(LINK_EXPIRY_SECONDS);
 
   useEffect(() => {
-    domainService
-      .getDomain(domainId)
-      .then(setDomain)
-      .finally(() => setLoading(false));
-  }, [domainId]);
+    if (authorized === false) {
+      toast.error("Unauthorized to access this domain");
+      router.push("/domain");
+    } else if (error) {
+      toast.error(error);
+      router.push("/domain");
+    }
+  }, [authorized, error, router]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {

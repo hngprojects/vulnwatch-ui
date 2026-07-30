@@ -335,7 +335,7 @@ export const scanService = {
     }
 
     const response = await privateApi.post<ApiResponse<ScanResponse>>(
-      "/api/Scans",
+      "/api/scans",
       {
         target: payload.domainId,
         targetType: "Domain",
@@ -356,7 +356,7 @@ export const scanService = {
     payload: CreateTargetScanPayload,
   ): Promise<ApiResponse<ScanResponse>> {
     const response = await privateApi.post<ApiResponse<ScanResponse>>(
-      "/api/Scans",
+      "/api/scans",
       {
         target: payload.target,
         targetType: payload.targetType,

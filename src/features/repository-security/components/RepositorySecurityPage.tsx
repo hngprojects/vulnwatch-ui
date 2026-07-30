@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { RepositoryStatsBar } from "./RepositoryStatsBar";
 import { RepositoryToolbar, type FilterStatus } from "./RepositoryToolbar";
 import { RepositoryGrid } from "./RepositoryGrid";
@@ -10,6 +11,7 @@ import type { Repository } from "../types/repository.types";
 
 export function RepositorySecurityPage() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -20,14 +22,15 @@ export function RepositorySecurityPage() {
       .catch((err) => {
         console.error("Failed to load repositories:", err);
         setRepositories([]);
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleConnect = () => {
-    const url = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
+    const url = process.env.GithubApp__InstallationUrl;
     if (!url) {
       toast.error("GitHub App is not configured yet.", {
-        description: "Set NEXT_PUBLIC_GITHUB_APP_INSTALL_URL to enable connecting.",
+        description: "Set GithubApp__InstallationUrl to enable connecting.",
       });
       return;
     }
@@ -73,11 +76,18 @@ export function RepositorySecurityPage() {
         </h2>
       </div>
 
-      <RepositoryGrid
-        repositories={filtered}
-        searchQuery={search}
-        onOpenConnectDialog={() => setDialogOpen(true)}
-      />
+      {loading ? (
+        <div className="flex h-[40vh] w-full flex-col items-center justify-center gap-2">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-sm font-medium text-neutral-500">Loading repositories...</p>
+        </div>
+      ) : (
+        <RepositoryGrid
+          repositories={filtered}
+          searchQuery={search}
+          onOpenConnectDialog={() => setDialogOpen(true)}
+        />
+      )}
     </div>
   );
 }
