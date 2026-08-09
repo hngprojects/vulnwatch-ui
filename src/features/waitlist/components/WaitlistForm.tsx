@@ -166,13 +166,13 @@ export function WaitlistForm() {
           <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Link>
 
-        <button
+        {/* <button
           type="button"
           onClick={handleReset}
           className="mt-4 text-sm font-medium text-brand-gray underline-offset-2 hover:text-brand-dark hover:underline"
         >
           Join with a different email
-        </button>
+        </button> */}
       </div>
     );
   }
