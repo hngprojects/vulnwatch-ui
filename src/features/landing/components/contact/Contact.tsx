@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Clock3, Mail, MapPin, Phone, SendHorizontal } from "lucide-react";
+import { Clock3, Mail, MapPin, SendHorizontal } from "lucide-react";
 import {
   supportSchema,
   type SupportFormData,
@@ -11,11 +11,11 @@ import {
 import { supportService } from "@/features/landing/services/support.service";
 
 const contactItems = [
-  {
-    label: "Phone Number",
-    value: "+234 813 912 6624",
-    icon: Phone,
-  },
+  // {
+  //   label: "Phone Number",
+  //   value: "+234 813 912 6624",
+  //   icon: Phone,
+  // },
   {
     label: "Email Address",
     value: "info@vulnwatch.com.ng",
