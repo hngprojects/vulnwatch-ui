@@ -16,12 +16,13 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
       { label: "Contact", href: "/contact" },
     ],
   },
-  {
-    title: "Company",
-    links: [
-      { label: "Press", href: "/press" },
-    ],
-  },
+  // Press hidden for now — re-enable when the Press page is ready.
+  // {
+  //   title: "Company",
+  //   links: [
+  //     { label: "Press", href: "/press" },
+  //   ],
+  // },
   {
     title: "Legal",
     links: [

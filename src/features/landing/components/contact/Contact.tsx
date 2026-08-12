@@ -18,7 +18,7 @@ const contactItems = [
   },
   {
     label: "Email Address",
-    value: "vulnwatch@demo.co",
+    value: "info@vulnwatch.com.ng",
     icon: Mail,
   },
   {
@@ -29,7 +29,7 @@ const contactItems = [
   },
   {
     label: "Our Location",
-    value: "12/14 Broad St, Lagos, Nigeria",
+    value: "Lagos, Nigeria",
     icon: MapPin,
   },
 ];
@@ -44,6 +44,10 @@ export function Contact() {
     resolver: zodResolver(supportSchema),
     mode: "onBlur",
   });
+
+  const onInvalid = () => {
+    toast.error("Please fill out all fields correctly before sending.");
+  };
 
   const onSubmit = async (data: SupportFormData) => {
     try {
@@ -142,7 +146,7 @@ export function Contact() {
               you soon with the best possible solution for your needs.
             </p>
 
-            <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit, onInvalid)}>
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
                 <label className="sr-only" htmlFor="contact-name">
                   Name
