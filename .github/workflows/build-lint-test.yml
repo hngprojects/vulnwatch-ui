@@ -51,8 +51,8 @@ jobs:
       - name: Set dummy env for build check
         run: |
           echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=dummy-client-id.apps.googleusercontent.com" >> .env.local
-          echo "NEXT_PUBLIC_APP_URL=https://staging.vuln-watch.hng14.com" >> .env.local
-          echo "API_BASE_URL=https://api.staging.vuln-watch.hng14.com" >> .env.local
+          echo "NEXT_PUBLIC_APP_URL=https://staging.vulnwatch.com.ng" >> .env.local
+          echo "API_BASE_URL=https://api.staging.vulnwatch.com.ng" >> .env.local
 
       - name: Build project
         run: pnpm build
